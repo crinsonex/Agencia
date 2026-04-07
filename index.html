@@ -17,24 +17,59 @@
   --border: #e8e8e3;
   --radius: 14px;
   --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --danger: #dc2626;
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
   background: var(--bg);
   color: var(--text);
-  display: flex;
-  min-height: 100vh;
   line-height: 1.5;
 }
+
+/* ============================================================
+   Login screen
+============================================================ */
+#login-screen {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 100vh; background: linear-gradient(135deg, #f5f5f0 0%, #e8e6f0 100%);
+}
+.login-card {
+  background: var(--card-bg); border-radius: 20px; padding: 48px 40px;
+  width: 380px; box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+  border: 1px solid var(--border);
+}
+.login-card h2 { font-size: 22px; font-weight: 700; color: var(--primary); margin-bottom: 4px; }
+.login-card p { font-size: 14px; color: var(--text-muted); margin-bottom: 28px; }
+.login-card label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text); }
+.login-card input[type=text], .login-card input[type=password] {
+  width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px;
+  font-size: 14px; margin-bottom: 16px; outline: none; background: #fafafa;
+  transition: border-color 0.15s;
+}
+.login-card input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,70,229,0.1); }
+.login-btn {
+  width: 100%; padding: 12px; background: var(--primary); color: #fff; border: none;
+  border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer;
+  transition: opacity 0.15s;
+}
+.login-btn:hover { opacity: 0.9; }
+.login-error { color: var(--danger); font-size: 13px; margin-top: 8px; display: none; }
+
+/* ============================================================
+   Dashboard layout
+============================================================ */
+.dashboard-layout { display: none; }
+.dashboard-layout.visible { display: flex; }
+
 .sidebar {
   width: 220px; min-width: 220px; background: var(--sidebar-bg);
   border-right: 1px solid var(--border); padding: 32px 0;
-  display: flex; flex-direction: column;
+  display: flex; flex-direction: column; min-height: 100vh;
 }
 .logo { padding: 0 24px 28px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
 .logo span { font-size: 20px; font-weight: 700; color: var(--primary); letter-spacing: -0.5px; }
-.sidebar-menu { list-style: none; padding: 0 12px; }
+.sidebar-menu { list-style: none; padding: 0 12px; flex: 1; }
 .sidebar-menu li,
 .menu-item-with-delete {
   display: flex; align-items: center; justify-content: space-between;
@@ -50,7 +85,7 @@ body {
   font-size: 14px; color: #ccc; cursor: pointer; padding: 2px 6px;
   border-radius: 4px; transition: all 0.15s; line-height: 1;
 }
-.delete-btn:hover { color: #dc2626; background: rgba(220,38,38,0.1); }
+.delete-btn:hover { color: var(--danger); background: rgba(220,38,38,0.1); }
 
 .upload-zone {
   margin: 0 12px 16px; border: 2px dashed var(--border); border-radius: 12px;
@@ -72,7 +107,21 @@ body {
 .sidebar-footer {
   margin-top: auto; padding: 16px 24px; font-size: 11px;
   color: var(--text-muted); border-top: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 4px;
 }
+.user-info { display: flex; align-items: center; gap: 6px; }
+.user-avatar {
+  width: 24px; height: 24px; border-radius: 50%; background: var(--primary);
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700;
+}
+.user-name { font-size: 12px; font-weight: 500; color: var(--text); }
+.user-role { font-size: 10px; color: var(--text-muted); margin-left: auto; }
+.logout-link, .settings-link {
+  font-size: 11px; color: var(--text-muted); cursor: pointer; text-decoration: none;
+  transition: color 0.15s;
+}
+.logout-link:hover, .settings-link:hover { color: var(--primary); }
 
 .main { flex: 1; padding: 36px 40px; max-width: 1300px; overflow-x: auto; }
 .top-bar {
@@ -177,9 +226,55 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .notification.fade-out { opacity: 0; transition: opacity 0.5s; }
 @keyframes slideIn { from { transform: translateX(100%); opacity:0; } to { transform: translateX(0); opacity:1; } }
 
+/* ============================================================
+   Modal
+============================================================ */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 2000;
+  display: flex; align-items: center; justify-content: center;
+  animation: fadeIn 0.2s;
+}
+.modal-overlay.hidden { display: none; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.modal {
+  background: var(--card-bg); border-radius: 16px; padding: 32px; width: 420px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.12);
+}
+.modal h3 { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+.modal input[type=text], .modal input[type=password], .modal select {
+  width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px;
+  font-size: 14px; margin-bottom: 12px; outline: none; background: #fafafa;
+}
+.modal input:focus, .modal select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,70,229,0.1); }
+.modal-row { display: flex; gap: 8px; }
+.btn {
+  padding: 10px 20px; border-radius: 10px; font-size: 14px; font-weight: 600;
+  cursor: pointer; border: none; transition: opacity 0.15s;
+}
+.btn:hover { opacity: 0.9; }
+.btn-primary { background: var(--primary); color: #fff; flex: 1; }
+.btn-secondary { background: var(--border); color: var(--text); }
+.btn-danger { background: var(--danger); color: #fff; }
+
+.user-list-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 0; border-bottom: 1px solid var(--border);
+}
+.user-list-item:last-child { border-bottom: none; }
+.user-list-name { font-weight: 600; font-size: 14px; }
+.user-list-role { font-size: 12px; color: var(--text-muted); }
+.user-list-actions { display: flex; gap: 6px; }
+.user-list-actions button {
+  padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px;
+  background: transparent; cursor: pointer; font-size: 12px; transition: all 0.15s;
+}
+.user-list-actions button:hover { border-color: var(--danger); color: var(--danger); }
+.admin-badge { font-size: 10px; background: var(--primary); color: #fff; padding: 1px 6px; border-radius: 4px; }
+
 @media (max-width: 900px) {
   body { flex-direction: column; }
-  .sidebar { width: 100%; min-width: unset; flex-direction: row; padding: 12px; gap: 8px; overflow-x: auto; }
+  .dashboard-layout { flex-direction: column; }
+  .sidebar { width: 100%; min-width: unset; flex-direction: row; padding: 12px; gap: 8px; overflow-x: auto; min-height: unset; }
   .sidebar .logo { border-bottom: none; padding: 0 8px; }
   .sidebar-menu { display: flex; padding: 0; gap: 4px; }
   .upload-zone { margin: 0 4px 8px; padding: 12px 8px; min-width: 120px; }
@@ -187,11 +282,34 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
   .main { padding: 20px 16px; }
   .charts-row { grid-template-columns: 1fr; }
   .top-bar { flex-direction: column; }
+  .modal { width: 90vw; margin: 0 20px; }
 }
 </style>
 </head>
 <body>
 
+<!-- ============================================================
+     LOGIN SCREEN
+============================================================ -->
+<div id="login-screen">
+  <div class="login-card">
+    <h2>Ju Basilio Viagens</h2>
+    <p>Dashboard da Agencia</p>
+    <form id="login-form">
+      <label for="login-user">Usuario</label>
+      <input type="text" id="login-user" placeholder="Digite seu usuario" autocomplete="username" autofocus>
+      <label for="login-pass">Senha</label>
+      <input type="password" id="login-pass" placeholder="Digite sua senha" autocomplete="current-password">
+      <button type="submit" class="login-btn">Entrar</button>
+      <div id="login-error" class="login-error">Usuario ou senha invalidos.</div>
+    </form>
+  </div>
+</div>
+
+<!-- ============================================================
+     DASHBOARD
+============================================================ -->
+<div class="dashboard-layout" id="dashboard-layout">
 <nav class="sidebar">
     <div class="logo"><span>&#9670; Ju Basilio Viagens</span></div>
 
@@ -204,7 +322,13 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
     <ul class="sidebar-menu" id="sidebar-menu"></ul>
 
     <div class="sidebar-footer">
-        <span id="month-count"></span>
+        <div class="user-info">
+            <div class="user-avatar" id="user-avatar">A</div>
+            <span class="user-name" id="user-display-name">-</span>
+            <span class="user-role" id="user-role-badge"> admin</span>
+            <span class="settings-link" id="settings-link" style="margin-left:auto" title="Gerenciar usuarios">&#9881;</span>
+        </div>
+        <a class="logout-link" id="logout-link">Sair</a>
     </div>
 </nav>
 
@@ -275,13 +399,245 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
 
     <div class="footer" id="footer"></div>
 </main>
+</div>
+
+<!-- ============================================================
+     USERS MODAL
+============================================================ -->
+<div class="modal-overlay hidden" id="users-modal">
+  <div class="modal">
+    <h3>Gerenciar Usuarios</h3>
+    <div id="users-list"></div>
+    <hr style="border:none;border-top:1px solid var(--border);margin:16px 0">
+    <h4 style="font-size:14px;margin-bottom:8px">Novo usuario</h4>
+    <form id="new-user-form">
+      <input type="text" id="new-username" placeholder="Nome de usuario" required>
+      <input type="password" id="new-password" placeholder="Senha" required>
+      <select id="new-role">
+        <option value="viewer">Visualizador</option>
+        <option value="admin">Administrador</option>
+      </select>
+      <div class="modal-row">
+        <button type="button" class="btn btn-secondary" onclick="closeUsersModal()">Fechar</button>
+        <button type="submit" class="btn btn-primary">Criar usuario</button>
+      </div>
+    </form>
+  </div>
+</div>
 
 <script>
 (function () {
     'use strict';
 
     /* ============================================================
-       Month / display
+       Crypto helpers (SHA-256 based password hashing)
+    ============================================================ */
+    async function sha256(text) {
+        var data = new TextEncoder().encode(text);
+        var hash = await crypto.subtle.digest('SHA-256', data);
+        return Array.from(new Uint8Array(hash)).map(function(b){ return b.toString(16).padStart(2, '0'); }).join('');
+    }
+
+    /* ============================================================
+       User management (localStorage)
+    ============================================================ */
+    var USERS_KEY = 'ju_basilio_users';
+    var SESSION_KEY = 'ju_basilio_session';
+
+    function getDefaultUsers() {
+        return {
+            'admin': { password: '', role: 'admin', createdAt: new Date().toISOString() }
+        };
+    }
+
+    async function initUsers() {
+        var users = localStorage.getItem(USERS_KEY);
+        if (!users) {
+            var defaults = getDefaultUsers();
+            defaults['admin'].password = await sha256('admin');
+            localStorage.setItem(USERS_KEY, JSON.stringify(defaults));
+        }
+    }
+
+    function getUsers() {
+        try { return JSON.parse(localStorage.getItem(USERS_KEY)) || {}; } catch(e) { return {}; }
+    }
+
+    function saveUsers(u) { localStorage.setItem(USERS_KEY, JSON.stringify(u)); }
+
+    function getCurrentUser() {
+        try { return JSON.parse(sessionStorage.getItem(SESSION_KEY)); } catch(e) { return null; }
+    }
+
+    function setCurrentUser(username, role) {
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify({username: username, role: role}));
+    }
+
+    function clearCurrentUser() { sessionStorage.removeItem(SESSION_KEY); }
+
+    /* ============================================================
+       Data storage
+    ============================================================ */
+    var STORAGE_KEY = 'ju_basilio_data';
+    var DATA = {};
+    var currentMonth = null;
+    var currentTab = 'mensal';
+    var currentUser = null;
+
+    /* ============================================================
+       Login flow
+    ============================================================ */
+    function showLogin() {
+        document.getElementById('login-screen').style.display = 'flex';
+        document.getElementById('dashboard-layout').classList.remove('visible');
+    }
+
+    function showDashboard() {
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('dashboard-layout').classList.add('visible');
+        applyRoleUI();
+    }
+
+    async function login(username, password) {
+        var users = getUsers();
+        var user = users[username];
+        if (!user) return false;
+        var hash = await sha256(password);
+        if (hash !== user.password) return false;
+        setCurrentUser(username, user.role);
+        return true;
+    }
+
+    function logout() {
+        clearCurrentUser();
+        currentUser = null;
+        showLogin();
+    }
+
+    /* ============================================================
+       Password helper
+    ============================================================ */
+    async function changePassword(username, newPass) {
+        var users = getUsers();
+        if (!users[username]) return false;
+        users[username].password = await sha256(newPass);
+        saveUsers(users);
+        return true;
+    }
+
+    /* ============================================================
+       Role-based UI
+    ============================================================ */
+    function isAdmin() { return currentUser && currentUser.role === 'admin'; }
+
+    function applyRoleUI() {
+        var uploadZone = document.getElementById('upload-zone');
+        var settingsLink = document.getElementById('settings-link');
+        var roleBadge = document.getElementById('user-role-badge');
+        var userAvatar = document.getElementById('user-avatar');
+        var userName = document.getElementById('user-display-name');
+
+        if (!currentUser) return;
+
+        // User info
+        userAvatar.textContent = currentUser.username.charAt(0).toUpperCase();
+        userName.textContent = currentUser.username;
+        roleBadge.textContent = isAdmin() ? ' admin' : ' viewer';
+
+        // Upload zone — only admin
+        if (isAdmin()) {
+            uploadZone.style.display = '';
+            settingsLink.style.display = '';
+        } else {
+            uploadZone.style.display = 'none';
+            settingsLink.style.display = 'none';
+        }
+
+        // Rebuild sidebar (delete buttons only for admin)
+        buildSidebar();
+    }
+
+    /* ============================================================
+       Users modal
+    ============================================================ */
+    window.openUsersModal = function() {
+        renderUsersList();
+        document.getElementById('users-modal').classList.remove('hidden');
+        document.getElementById('new-username').value = '';
+        document.getElementById('new-password').value = '';
+        document.getElementById('new-role').value = 'viewer';
+    };
+
+    window.closeUsersModal = function() {
+        document.getElementById('users-modal').classList.add('hidden');
+    };
+
+    function renderUsersList() {
+        var list = document.getElementById('users-list');
+        var users = getUsers();
+        var keys = Object.keys(users);
+        if (!keys.length) {
+            list.innerHTML = '<p style="color:var(--text-muted);font-size:13px">Nenhum usuario cadastrado.</p>';
+            return;
+        }
+        list.innerHTML = '';
+        keys.forEach(function(name) {
+            var u = users[name];
+            var isYou = name === currentUser.username;
+            var isLast = keys.length <= 1;
+            var div = document.createElement('div');
+            div.className = 'user-list-item';
+            div.innerHTML =
+                '<div>' +
+                    '<span class="user-list-name">' + name + (isYou ? ' (voce)' : '') + '</span> ' +
+                    '<span class="admin-badge" style="background:' + (u.role === 'admin' ? 'var(--primary)' : '#888') + '">' + (u.role === 'admin' ? 'admin' : 'viewer') + '</span>' +
+                '</div>' +
+                '<div class="user-list-actions">' +
+                    (name !== currentUser.username ?
+                        '<button onclick="changeUserRole(\'' + name + '\')" title="Trocar papel">&#8635; Papel</button>' +
+                        '<button onclick="resetUserPass(\'' + name + '\')" title="Resetar senha">&#128272; Senha</button>' +
+                        (name !== 'admin' && !isLast ? '<button title="Remover" onclick="removeUser(\'' + name + '\')">&#10005;</button>' : '') +
+                    : '<button onclick="openChangeOwnPass()" title="Trocar minha senha">&#128272; Minha senha</button>') +
+                '</div>';
+            list.appendChild(div);
+        });
+    }
+
+    window.changeUserRole = function(username) {
+        var users = getUsers();
+        var u = users[username];
+        if (!u) return;
+        u.role = u.role === 'admin' ? 'viewer' : 'admin';
+        saveUsers(users);
+        renderUsersList();
+        showNotification('Papel de ' + username + ' alterado para ' + u.role, 'success');
+    };
+
+    window.removeUser = function(username) {
+        if (!confirm('Remover usuario "' + username + '"?')) return;
+        var users = getUsers();
+        delete users[username];
+        saveUsers(users);
+        renderUsersList();
+        showNotification('Usuario ' + username + ' removido', 'success');
+    };
+
+    window.resetUserPass = async function(username) {
+        var newPass = prompt('Nova senha para "' + username + '":');
+        if (!newPass || !newPass.trim()) return;
+        await changePassword(username, newPass.trim());
+        showNotification('Senha de ' + username + ' atualizada', 'success');
+    };
+
+    window.openChangeOwnPass = async function() {
+        var newPass = prompt('Nova senha para "' + currentUser.username + '":');
+        if (!newPass || !newPass.trim()) return;
+        await changePassword(currentUser.username, newPass.trim());
+        showNotification('Sua senha foi atualizada', 'success');
+    };
+
+    /* ============================================================
+       Constants (moved from old position)
     ============================================================ */
     var MONTH_NAMES = {
         'JANEIRO': 'Janeiro', 'FEVEREIRO': 'Fevereiro', 'MARCO': 'Marco',
@@ -289,36 +645,19 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
         'JULHO': 'Julho', 'AGOSTO': 'Agosto', 'SETEMBRO': 'Setembro',
         'OUTUBRO': 'Outubro', 'NOVEMBRO': 'Novembro', 'DEZEMBRO': 'Dezembro',
     };
-
-    var STORAGE_KEY = 'ju_basilio_data';
-    var DATA = {};
-    var currentMonth = null;
-    var currentTab = 'mensal';
     var COLORS = ['#4f46e5','#06b6d4','#f59e0b','#10b981','#f97316','#ec4899','#6366f1','#14b8a6'];
     var barChart = null, donutChart = null, lineChart = null, salesBarChart = null, sellersStackedChart = null;
 
     /* ============================================================
-       Helpers — same behavior as Python _money()
+       Helpers
     ============================================================ */
     function _money(v) {
         if (v == null || v === '') return 0;
         if (typeof v === 'number') return isNaN(v) ? 0 : Math.abs(v);
         var s = String(v).replace(/\s/g, '').replace('R$', '');
-        // Brazilian: dots = thousands sep, comma = decimal
-        if (s.indexOf(',') > -1) {
-            s = s.replace(/\./g, '').replace(',', '.');
-        }
-        // US style (no comma)
-        var n = parseFloat(s);
-        return isNaN(n) ? 0 : Math.abs(n);
-    }
-
-    function moneySign(v) {
-        var s = String(v).replace(/\s/g, '').replace('R$', '');
         if (s.indexOf(',') > -1) s = s.replace(/\./g, '').replace(',', '.');
         var n = parseFloat(s);
-        if (isNaN(n)) return 0;
-        return n;  // keep sign
+        return isNaN(n) ? 0 : Math.abs(n);
     }
 
     function fmt(v) {
@@ -326,8 +665,7 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
     }
 
     /* ============================================================
-       Parse XLSX (.xlsx / .xls) — like Python parse_xlsx()
-       Colunas: Id, Nome, Produto, Status, Total, Taxa, Liquido, Comissao, Obs, ...
+       Parse XLSX
     ============================================================ */
     function parseXlsxRows(ws) {
         var rows = XLSX.utils.sheet_to_json(ws, {header: 1, defval: ''});
@@ -341,8 +679,7 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
             if (!first) continue;
 
             var idLike = first.replace(/[.\-]/g, '');
-            var isIdMatch = false;
-            if (/[a-zA-Z]*\d{5,}/.test(idLike) || /^[A-Za-z]{3,}$/.test(idLike)) isIdMatch = true;
+            var isIdMatch = /[a-zA-Z]*\d{5,}/.test(idLike) || /^[A-Za-z]{3,}$/.test(idLike);
 
             if (!isIdMatch) {
                 var parts = vals.filter(function(v){ return v !== ''; }).map(function(v){ return String(v).trim(); });
@@ -352,15 +689,9 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
 
             var status = String(vals[3]).trim().toUpperCase();
             var t = {
-                id: first,
-                nome: String(vals[1]).trim(),
-                produto: String(vals[2]).trim(),
-                status: status,
-                total: _money(vals[4]),
-                taxa: _money(vals[5]),
-                liquido: _money(vals[6]),
-                comissao: _money(vals[7]),
-                obs: String(vals[8]).trim(),
+                id: first, nome: String(vals[1]).trim(), produto: String(vals[2]).trim(),
+                status: status, total: _money(vals[4]), taxa: _money(vals[5]),
+                liquido: _money(vals[6]), comissao: _money(vals[7]), obs: String(vals[8]).trim(),
             };
             transactions.push(t);
 
@@ -376,8 +707,7 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
     }
 
     /* ============================================================
-       Parse messy CSV — like Python _parse_csv_text()
-       May have everything in one column.
+       Parse messy CSV
     ============================================================ */
     function isId(s) {
         var c = s.replace(/[.-]/g, '');
@@ -394,38 +724,27 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
         for (var i = 0; i < lines.length; i++) {
             var line = lines[i].trim().replace(/^"|"$/g, '').trim();
             if (!line) continue;
-
             if (line.indexOf('Comissao') !== -1 || line.indexOf('Obs.') === 0 || line.charAt(0) === '\x0c') {
-                inSummary = true;
-                summary.push(line);
-                continue;
+                inSummary = true; summary.push(line); continue;
             }
             if (line.toLowerCase().indexOf('id') === 0) continue;
 
             var sellerNames = ['Giulia', 'Amanda', 'Juliana', 'Sofia'];
             var isSellerLine = false;
-            for (var si = 0; si < sellerNames.length; si++) {
-                if (line.indexOf(sellerNames[si]) === 0) { isSellerLine = true; break; }
-            }
+            for (var si = 0; si < sellerNames.length; si++) { if (line.indexOf(sellerNames[si]) === 0) { isSellerLine = true; break; } }
             if (inSummary || line.indexOf('R$') === 0 || isSellerLine || line.indexOf('723,') === 0 || line.indexOf('(erro)') === 0) {
-                summary.push(line);
-                continue;
+                summary.push(line); continue;
             }
 
             if (pendingLine !== null) {
                 line = pendingLine + ' ' + line;
-                pendingLine = null;
-                inSummary = false;
+                pendingLine = null; inSummary = false;
             }
 
             var cols = line.split(/\s+/);
             if (!cols.length) continue;
-
             var first = cols[0];
-            if (!isId(first)) {
-                summary.push(line);
-                continue;
-            }
+            if (!isId(first)) { summary.push(line); continue; }
 
             var rest = line.substring(first.length).trim();
             var pIdx = rest.indexOf(' ');
@@ -434,13 +753,8 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
             rest = rest.substring(pIdx + 1).trim();
 
             var status = '';
-            if (rest.indexOf('PAGO') !== -1) {
-                status = 'PAGO';
-                rest = rest.replace('PAGO', '').trim();
-            } else if (rest.indexOf('PENDENTE') !== -1) {
-                status = 'PENDENTE';
-                rest = rest.replace('PENDENTE', '').trim();
-            }
+            if (rest.indexOf('PAGO') !== -1) { status = 'PAGO'; rest = rest.replace('PAGO', '').trim(); }
+            else if (rest.indexOf('PENDENTE') !== -1) { status = 'PENDENTE'; rest = rest.replace('PENDENTE', '').trim(); }
 
             var moneyVals = [];
             var m, moneyRe = /R\$\s*[\d.,]+/g;
@@ -449,28 +763,21 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
             var rIdx = rest.indexOf('R$');
             var produto = rIdx !== -1 ? rest.substring(0, rIdx).trim() : rest.trim();
 
-            if (!moneyVals.length && rest.charAt(rest.length - 1) === '-') {
-                pendingLine = line;
-                continue;
-            }
+            if (!moneyVals.length && rest.charAt(rest.length - 1) === '-') { pendingLine = line; continue; }
 
             transactions.push({
-                id: first,
-                nome: nome,
-                produto: produto,
-                status: status,
+                id: first, nome: nome, produto: produto, status: status,
                 total: moneyVals.length > 0 ? _money(moneyVals[0]) : 0,
                 taxa: moneyVals.length > 1 ? _money(moneyVals[1]) : 0,
                 liquido: moneyVals.length > 2 ? _money(moneyVals[2]) : 0,
-                comissao: 0,
-                obs: ''
+                comissao: 0, obs: ''
             });
         }
         return {transactions: transactions, summary: summary};
     }
 
     /* ============================================================
-       File processing — like Python compute_kpis()
+       KPI & file processing
     ============================================================ */
     function computeKpis(transactions, monthName) {
         var kpis = {
@@ -480,8 +787,7 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
         };
         for (var i = 0; i < transactions.length; i++) {
             var t = transactions[i];
-            var tt = t.total, tx = t.taxa, ll = t.liquido;
-            kpis.total += tt; kpis.taxas += tx; kpis.liquido += ll;
+            kpis.total += t.total; kpis.taxas += t.taxa; kpis.liquido += t.liquido;
             kpis.comissoes += (t.comissao || 0);
 
             var st = (t.status || '').toUpperCase();
@@ -494,54 +800,43 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
                     kpis.vendedores[nome] = {total:0, taxas:0, liquido:0, comissao:0, count:0, pagos:0, pendentes:0};
                 }
                 var v = kpis.vendedores[nome];
-                v.total += tt; v.taxas += tx; v.liquido += ll;
-                v.comissao += (t.comissao || 0);
-                v.count++;
+                v.total += t.total; v.taxas += t.taxa; v.liquido += t.liquido;
+                v.comissao += (t.comissao || 0); v.count++;
                 if (st.indexOf('PAGO') !== -1) v.pagos++;
                 else if (st.indexOf('PENDENTE') !== -1) v.pendentes++;
             }
-
             var prod = t.produto || 'N/A';
             if (prod.length > 40) prod = prod.substring(0,37) + '...';
-            kpis.produtos[prod] = (kpis.produtos[prod] || 0) + tt;
+            kpis.produtos[prod] = (kpis.produtos[prod] || 0) + t.total;
         }
         return kpis;
     }
 
     function processFile(file) {
         return new Promise(function(resolve, reject) {
-            var name = file.name;
-            var ext = name.split('.').pop().toLowerCase();
-            var label = name.replace(/\.[^.]+$/, '').toUpperCase();
+            var ext = file.name.split('.').pop().toLowerCase();
+            var label = file.name.replace(/\.[^.]+$/, '').toUpperCase();
             var display = MONTH_NAMES[label] || label;
 
             function finish(transactions, summary) {
                 var kpis = computeKpis(transactions, display);
-                resolve({
-                    meta: {display: display, file: name},
-                    kpi: kpis,
-                    transactions: transactions,
-                    summary: summary
-                });
+                resolve({meta:{display: display, file: file.name}, kpi: kpis, transactions: transactions, summary: summary});
             }
 
             if (ext === 'csv') {
                 var reader = new FileReader();
                 reader.onload = function(e) {
                     var text = e.target.result;
-                    // Try SheetJS CSV first
                     try {
                         var wb = XLSX.read(text, {type: 'string'});
                         var ws = wb.Sheets[wb.SheetNames[0]];
                         var rows = XLSX.utils.sheet_to_json(ws, {header: 1});
-                        // If we got multiple columns, use XLSX result
                         if (rows.length > 1 && rows[0] && rows[0].length > 1) {
                             var parsed = parseXlsxRows(ws);
                             finish(parsed.transactions, parsed.summary);
                             return;
                         }
                     } catch(e) { /* fallback */ }
-                    // Fallback: messy CSV parser
                     var r = parseMessyCsv(text);
                     finish(r.transactions, r.summary);
                 };
@@ -561,19 +856,13 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
     }
 
     /* ============================================================
-       Storage (localStorage)
+       Data storage
     ============================================================ */
     function saveData() {
-        try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA));
-        } catch(e) { /* quota exceeded — data only lives in memory */ }
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA)); } catch(e) {}
     }
-
     function loadData() {
-        try {
-            var raw = localStorage.getItem(STORAGE_KEY);
-            if (raw) DATA = JSON.parse(raw);
-        } catch(e) { DATA = {}; }
+        try { var raw = localStorage.getItem(STORAGE_KEY); if (raw) DATA = JSON.parse(raw); } catch(e) { DATA = {}; }
     }
 
     /* ============================================================
@@ -599,21 +888,21 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
             nameSpan.style.cursor = 'pointer';
             nameSpan.style.flex = '1';
             nameSpan.onclick = function() { selectMonth(key); };
-
-            var delBtn = document.createElement('span');
-            delBtn.innerHTML = '&#10005;';
-            delBtn.className = 'delete-btn';
-            delBtn.title = 'Remover ' + DATA[key].meta.display;
-            delBtn.onclick = function(e) {
-                e.stopPropagation();
-                deleteMonth(key);
-            };
-
             li.appendChild(nameSpan);
-            li.appendChild(delBtn);
+
+            // Del button — only admin
+            if (isAdmin()) {
+                var delBtn = document.createElement('span');
+                delBtn.innerHTML = '&#10005;';
+                delBtn.className = 'delete-btn';
+                delBtn.title = 'Remover ' + DATA[key].meta.display;
+                delBtn.onclick = function(e) { e.stopPropagation(); deleteMonth(key); };
+                li.appendChild(delBtn);
+            }
             menu.appendChild(li);
         });
-        document.getElementById('month-count').textContent = keys.length + ' mes' + (keys.length > 1 ? 'es' : '');
+        var countEl = document.getElementById('month-count');
+        if (countEl) countEl.textContent = keys.length + ' mes' + (keys.length > 1 ? 'es' : '');
     }
 
     /* ============================================================
@@ -635,7 +924,6 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
         document.getElementById('month-subtitle').textContent =
             'Faturamento, comissoes e resultado \u2014 ' + conv + ' (' + tot + ' vendas)';
 
-        // KPI cards
         var grid = document.getElementById('kpi-grid');
         grid.innerHTML = '';
         [
@@ -652,7 +940,6 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
             grid.appendChild(div);
         });
 
-        // Seller cards
         var sellers = document.getElementById('seller-panels');
         sellers.innerHTML = '';
         var sellerKeys = Object.keys(k.vendedores);
@@ -669,65 +956,29 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
                 card.className = 'seller-card';
                 card.innerHTML =
                     '<div class="avatar">' + initials + '</div>' +
-                    '<div class="info">' +
-                        '<div class="name">' + name + '</div>' +
-                        '<div class="meta">' + s.count + ' vendas | ' + s.pagos + ' pagas | ' + s.pendentes + ' pendentes</div>' +
-                    '</div>' +
-                    '<div class="seller-values">' +
-                        '<div class="sv-total">' + fmt(s.total) + '</div>' +
-                        '<div class="sv-liq">liquido: ' + fmt(s.liquido) + '</div>' +
-                        '<div class="sv-com">comissao: ' + fmt(s.comissao) + '</div>' +
-                    '</div>';
+                    '<div class="info"><div class="name">' + name + '</div><div class="meta">' + s.count + ' vendas | ' + s.pagos + ' pagas | ' + s.pendentes + ' pendentes</div></div>' +
+                    '<div class="seller-values"><div class="sv-total">' + fmt(s.total) + '</div><div class="sv-liq">liquido: ' + fmt(s.liquido) + '</div><div class="sv-com">comissao: ' + fmt(s.comissao) + '</div></div>';
                 sgrid.appendChild(card);
             });
             panel.appendChild(sgrid);
             sellers.appendChild(panel);
         }
 
-        // Bar chart — sellers
         if (barChart) barChart.destroy();
         barChart = new Chart(document.getElementById('chart-bar'), {
             type: 'bar',
-            data: {
-                labels: sellerKeys,
-                datasets: [{
-                    data: sellerKeys.map(function(n){ return k.vendedores[n].total; }),
-                    backgroundColor: COLORS.slice(0, sellerKeys.length),
-                    borderRadius: 6,
-                    barThickness: 40,
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: true, ticks: { callback: function(v){ return fmt(v); } } }
-                }
-            }
+            data: { labels: sellerKeys, datasets: [{ data: sellerKeys.map(function(n){ return k.vendedores[n].total; }), backgroundColor: COLORS.slice(0, sellerKeys.length), borderRadius: 6, barThickness: 40 }] },
+            options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { callback: function(v){ return fmt(v); } } } } }
         });
 
-        // Donut — products
         var pLabels = Object.keys(k.produtos);
         if (donutChart) donutChart.destroy();
         donutChart = new Chart(document.getElementById('chart-donut'), {
             type: 'doughnut',
-            data: {
-                labels: pLabels,
-                datasets: [{
-                    data: pLabels.map(function(n){ return k.produtos[n]; }),
-                    backgroundColor: COLORS.slice(0, pLabels.length),
-                    borderWidth: 0,
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true, font: {size: 11} } }
-                }
-            }
+            data: { labels: pLabels, datasets: [{ data: pLabels.map(function(n){ return k.produtos[n]; }), backgroundColor: COLORS.slice(0, pLabels.length), borderWidth: 0 }] },
+            options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true, font: {size: 11} } } } }
         });
 
-        // Tx table
         var tbody = document.getElementById('tx-body');
         tbody.innerHTML = '';
         d.transactions.forEach(function(t) {
@@ -735,29 +986,18 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
             var stClass = t.status && t.status.toUpperCase().indexOf('PAGO') !== -1 ? 'PAGO' :
                           (t.status && t.status.toUpperCase().indexOf('PENDENTE') !== -1 ? 'PENDENTE' : 'VAZIO');
             var stText = t.status || '\u2014';
-            tr.innerHTML =
-                '<td>' + (t.id||'') + '</td>' +
-                '<td>' + (t.nome||'') + '</td>' +
-                '<td>' + (t.produto||'') + '</td>' +
+            tr.innerHTML = '<td>' + (t.id||'') + '</td><td>' + (t.nome||'') + '</td><td>' + (t.produto||'') + '</td>' +
                 '<td><span class="badge ' + stClass + '">' + stText + '</span></td>' +
-                '<td class="num">' + fmt(t.total||0) + '</td>' +
-                '<td class="num">' + fmt(t.taxa||0) + '</td>' +
-                '<td class="num">' + fmt(t.liquido||0) + '</td>' +
-                '<td class="num">' + fmt(t.comissao||0) + '</td>' +
-                '<td>' + (t.obs||'') + '</td>';
+                '<td class="num">' + fmt(t.total||0) + '</td><td class="num">' + fmt(t.taxa||0) + '</td>' +
+                '<td class="num">' + fmt(t.liquido||0) + '</td><td class="num">' + fmt(t.comissao||0) + '</td><td>' + (t.obs||'') + '</td>';
             tbody.appendChild(tr);
         });
 
-        // Summary
         var sumList = document.getElementById('summary-list');
         sumList.innerHTML = '';
-        if (d.summary && d.summary.length) {
-            d.summary.forEach(function(line) {
-                var li = document.createElement('li');
-                li.textContent = line;
-                sumList.appendChild(li);
-            });
-        }
+        if (d.summary && d.summary.length) d.summary.forEach(function(line){
+            var li = document.createElement('li'); li.textContent = line; sumList.appendChild(li);
+        });
     }
 
     /* ============================================================
@@ -765,140 +1005,59 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
     ============================================================ */
     function renderAnnual() {
         var keys = Object.keys(DATA);
-        var MONTH_ORDER = [
-            'JANEIRO', 'FEVEREIRO', 'MARCO', 'ABRIL', 'MAIO', 'JUNHO',
-            'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'
-        ];
-        keys.sort(function(a,b){
-            return MONTH_ORDER.indexOf(a) - MONTH_ORDER.indexOf(b);
-        });
+        var MONTH_ORDER = ['JANEIRO','FEVEREIRO','MARCO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
+        keys.sort(function(a,b){ return MONTH_ORDER.indexOf(a) - MONTH_ORDER.indexOf(b); });
 
-        var months = [];
-        var allSellers = {};
+        var months = []; var allSellers = {};
         keys.forEach(function(key) {
             var k = DATA[key].kpi;
-            months.push({
-                month: key, display: k.display,
-                total: k.total, taxas: k.taxas, liquido: k.liquido,
-                comissoes: k.comissoes, pagos: k.pagos, pendentes: k.pendentes
-            });
-            Object.keys(k.vendedores).forEach(function(name) {
-                if (!allSellers[name]) allSellers[name] = {};
-                allSellers[name][key] = k.vendedores[name].total;
-            });
+            months.push({month: key, display: k.display, total: k.total, taxas: k.taxas, liquido: k.liquido, comissoes: k.comissoes, pagos: k.pagos, pendentes: k.pendentes});
+            Object.keys(k.vendedores).forEach(function(name) { if (!allSellers[name]) allSellers[name] = {}; allSellers[name][key] = k.vendedores[name].total; });
         });
 
-        if (!months.length) {
-            document.getElementById('kpi-anual-grid').innerHTML = '<p style="padding:20px">Nenhum mes disponivel</p>';
-            return;
-        }
+        if (!months.length) { document.getElementById('kpi-anual-grid').innerHTML = '<p style="padding:20px">Nenhum mes disponivel</p>'; return; }
 
-        var grandTotal = 0, grandTaxas = 0, grandLiquido = 0, grandComissoes = 0, grandPagos = 0, grandPendentes = 0;
-        months.forEach(function(m) {
-            grandTotal += m.total; grandTaxas += m.taxas; grandLiquido += m.liquido;
-            grandComissoes += m.comissoes; grandPagos += m.pagos; grandPendentes += m.pendentes;
-        });
+        var grandTotal=0, grandTaxas=0, grandLiquido=0, grandComissoes=0, grandPagos=0, grandPendentes=0;
+        months.forEach(function(m){ grandTotal+=m.total; grandTaxas+=m.taxas; grandLiquido+=m.liquido; grandComissoes+=m.comissoes; grandPagos+=m.pagos; grandPendentes+=m.pendentes; });
 
-        var grid = document.getElementById('kpi-anual-grid');
-        grid.innerHTML = '';
+        var grid = document.getElementById('kpi-anual-grid'); grid.innerHTML = '';
         [
-            {l:'Faturamento Anual', v:fmt(grandTotal)},
-            {l:'Taxas Anual', v:fmt(grandTaxas)},
-            {l:'Liquido Anual', v:fmt(grandLiquido)},
-            {l:'Comissoes Anual', v:fmt(grandComissoes)},
-            {l:'Total Vendas', v:grandPagos + ' pagas / ' + grandPendentes + ' pendentes'},
-            {l:'Meses', v:months.length}
-        ].forEach(function(item) {
-            var div = document.createElement('div');
-            div.className = 'kpi-card';
-            div.innerHTML = '<div class="label">' + item.l + '</div><div class="value">' + item.v + '</div>';
-            grid.appendChild(div);
-        });
+            {l:'Faturamento Anual',v:fmt(grandTotal)},{l:'Taxas Anual',v:fmt(grandTaxas)},{l:'Liquido Anual',v:fmt(grandLiquido)},
+            {l:'Comissoes Anual',v:fmt(grandComissoes)},{l:'Total Vendas',v:grandPagos+' pagas / '+grandPendentes+' pendentes'},{l:'Meses',v:months.length}
+        ].forEach(function(item){ var div=document.createElement('div');div.className='kpi-card';div.innerHTML='<div class="label">'+item.l+'</div><div class="value">'+item.v+'</div>';grid.appendChild(div); });
 
-        // Line chart
         if (lineChart) lineChart.destroy();
         lineChart = new Chart(document.getElementById('chart-line'), {
-            type: 'line',
-            data: {
-                labels: months.map(function(m){ return m.display; }),
-                datasets: [
-                    { label: 'Faturamento', data: months.map(function(m){ return m.total; }), borderColor: '#4f46e5', backgroundColor: 'rgba(79,70,229,0.08)', fill: true, tension: 0.3, pointRadius: 5, pointHoverRadius: 7 },
-                    { label: 'Liquido s/ Taxas', data: months.map(function(m){ return m.liquido; }), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.08)', fill: true, tension: 0.3, pointRadius: 5, pointHoverRadius: 7 },
-                    { label: 'Taxas', data: months.map(function(m){ return m.taxas; }), borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.06)', fill: true, tension: 0.3, pointRadius: 4, pointHoverRadius: 6 }
-                ]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { position: 'top', labels: { padding: 16, usePointStyle: true } }, tooltip: { callbacks: { label: function(ctx){ return ctx.dataset.label + ': ' + fmt(ctx.parsed.y); } } } },
-                scales: { y: { beginAtZero: true, ticks: { callback: function(v){ return fmt(v); } } } }
-            }
+            type:'line',
+            data:{labels:months.map(function(m){return m.display;}),datasets:[
+                {label:'Faturamento',data:months.map(function(m){return m.total;}),borderColor:'#4f46e5',backgroundColor:'rgba(79,70,229,0.08)',fill:true,tension:0.3,pointRadius:5,pointHoverRadius:7},
+                {label:'Liquido s/ Taxas',data:months.map(function(m){return m.liquido;}),borderColor:'#10b981',backgroundColor:'rgba(16,185,129,0.08)',fill:true,tension:0.3,pointRadius:5,pointHoverRadius:7},
+                {label:'Taxas',data:months.map(function(m){return m.taxas;}),borderColor:'#f59e0b',backgroundColor:'rgba(245,158,11,0.06)',fill:true,tension:0.3,pointRadius:4,pointHoverRadius:6}
+            ]},
+            options:{responsive:true,plugins:{legend:{position:'top',labels:{padding:16,usePointStyle:true}},tooltip:{callbacks:{label:function(ctx){return ctx.dataset.label+': '+fmt(ctx.parsed.y);}}}},scales:{y:{beginAtZero:true,ticks:{callback:function(v){return fmt(v);}}}}}
         });
 
-        // Sales bar
         if (salesBarChart) salesBarChart.destroy();
         salesBarChart = new Chart(document.getElementById('chart-sales-bar'), {
-            type: 'bar',
-            data: {
-                labels: months.map(function(m){ return m.display; }),
-                datasets: [
-                    { label: 'Pagas', data: months.map(function(m){ return m.pagos; }), backgroundColor: '#16a34a', borderRadius: 4, barPercentage: 0.6 },
-                    { label: 'Pendentes', data: months.map(function(m){ return m.pendentes; }), backgroundColor: '#f59e0b', borderRadius: 4, barPercentage: 0.6 }
-                ]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { position: 'top', labels: { usePointStyle: true } } },
-                scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }
-            }
+            type:'bar',
+            data:{labels:months.map(function(m){return m.display;}),datasets:[
+                {label:'Pagas',data:months.map(function(m){return m.pagos;}),backgroundColor:'#16a34a',borderRadius:4,barPercentage:0.6},
+                {label:'Pendentes',data:months.map(function(m){return m.pendentes;}),backgroundColor:'#f59e0b',borderRadius:4,barPercentage:0.6}
+            ]},
+            options:{responsive:true,plugins:{legend:{position:'top',labels:{usePointStyle:true}}},scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true}}}
         });
 
-        // Sellers stacked
-        var sellerNames = Object.keys(allSellers);
+        var sellerNames2 = Object.keys(allSellers);
         if (sellersStackedChart) sellersStackedChart.destroy();
         sellersStackedChart = new Chart(document.getElementById('chart-sellers-stacked'), {
-            type: 'bar',
-            data: {
-                labels: months.map(function(m){ return m.display; }),
-                datasets: sellerNames.map(function(name, i) {
-                    return {
-                        label: name,
-                        data: months.map(function(m) { return (allSellers[name] && allSellers[name][m.month]) || 0; }),
-                        backgroundColor: COLORS[i % COLORS.length],
-                        borderRadius: 2,
-                    };
-                })
-            },
-            options: {
-                responsive: true,
-                scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, ticks: { callback: function(v){ return fmt(v); } } } },
-                plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, font: {size: 11}, padding: 10 } } }
-            }
+            type:'bar',
+            data:{labels:months.map(function(m){return m.display;}),datasets:sellerNames2.map(function(name,i){return{label:name,data:months.map(function(m){return(allSellers[name]&&allSellers[name][m.month])||0;}),backgroundColor:COLORS[i%COLORS.length],borderRadius:2};})},
+            options:{responsive:true,scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true,ticks:{callback:function(v){return fmt(v);}}}},plugins:{legend:{position:'bottom',labels:{usePointStyle:true,font:{size:11},padding:10}}}}
         });
 
-        // Annual table
-        var tbody = document.getElementById('anual-tbody');
-        tbody.innerHTML = '';
-        months.forEach(function(m) {
-            var tr = document.createElement('tr');
-            tr.innerHTML = '<td>' + m.display + '</td>' +
-                '<td class="num">' + fmt(m.total) + '</td>' +
-                '<td class="num">' + fmt(m.taxas) + '</td>' +
-                '<td class="num">' + fmt(m.liquido) + '</td>' +
-                '<td class="num">' + fmt(m.comissoes) + '</td>' +
-                '<td class="num">' + m.pagos + '</td>' +
-                '<td class="num">' + m.pendentes + '</td>';
-            tbody.appendChild(tr);
-        });
-        var tr = document.createElement('tr');
-        tr.style.fontWeight = '700';
-        tr.innerHTML = '<td>TOTAL</td>' +
-            '<td class="num">' + fmt(grandTotal) + '</td>' +
-            '<td class="num">' + fmt(grandTaxas) + '</td>' +
-            '<td class="num">' + fmt(grandLiquido) + '</td>' +
-            '<td class="num">' + fmt(grandComissoes) + '</td>' +
-            '<td class="num">' + grandPagos + '</td>' +
-            '<td class="num">' + grandPendentes + '</td>';
-        tbody.appendChild(tr);
+        var tbody = document.getElementById('anual-tbody'); tbody.innerHTML = '';
+        months.forEach(function(m){var tr=document.createElement('tr');tr.innerHTML='<td>'+m.display+'</td><td class="num">'+fmt(m.total)+'</td><td class="num">'+fmt(m.taxas)+'</td><td class="num">'+fmt(m.liquido)+'</td><td class="num">'+fmt(m.comissoes)+'</td><td class="num">'+m.pagos+'</td><td class="num">'+m.pendentes+'</td>';tbody.appendChild(tr);});
+        var tr=document.createElement('tr');tr.style.fontWeight='700';tr.innerHTML='<td>TOTAL</td><td class="num">'+fmt(grandTotal)+'</td><td class="num">'+fmt(grandTaxas)+'</td><td class="num">'+fmt(grandLiquido)+'</td><td class="num">'+fmt(grandComissoes)+'</td><td class="num">'+grandPagos+'</td><td class="num">'+grandPendentes+'</td>';tbody.appendChild(tr);
     }
 
     /* ============================================================
@@ -906,74 +1065,51 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
     ============================================================ */
     window.switchTab = function(tab) {
         currentTab = tab;
-        document.querySelectorAll('.tab').forEach(function(el) {
-            el.classList.toggle('active', el.dataset.tab === tab);
-        });
+        document.querySelectorAll('.tab').forEach(function(el) { el.classList.toggle('active', el.dataset.tab === tab); });
         document.getElementById('view-mensal').classList.toggle('hidden', tab !== 'mensal');
         document.getElementById('view-anual').classList.toggle('hidden', tab !== 'anual');
-
-        var title = document.getElementById('month-title');
-        var subtitle = document.getElementById('month-subtitle');
         if (tab === 'mensal') {
-            title.textContent = DATA && currentMonth ? (DATA[currentMonth].meta.display || '-') : '-';
+            document.getElementById('month-title').textContent = DATA && currentMonth ? (DATA[currentMonth].meta.display || '-') : '-';
         } else {
-            title.textContent = 'Visao Anual';
-            subtitle.textContent = 'Evolucao dos resultados ao longo dos meses';
+            document.getElementById('month-title').textContent = 'Visao Anual';
+            document.getElementById('month-subtitle').textContent = 'Evolucao dos resultados ao longo dos meses';
             renderAnnual();
         }
     };
 
     /* ============================================================
-       Upload
+       Upload — admin only
     ============================================================ */
     function setupUpload() {
         var zone = document.getElementById('upload-zone');
         var input = document.getElementById('file-input');
-
         zone.addEventListener('click', function() { input.click(); });
         zone.addEventListener('dragover', function(e) { e.preventDefault(); zone.classList.add('dragover'); });
         zone.addEventListener('dragleave', function() { zone.classList.remove('dragover'); });
-        zone.addEventListener('drop', function(e) {
-            e.preventDefault();
-            zone.classList.remove('dragover');
-            if (e.dataTransfer.files.length) uploadFile(e.dataTransfer.files[0]);
-        });
-        input.addEventListener('change', function() {
-            if (input.files.length) uploadFile(input.files[0]);
-        });
+        zone.addEventListener('drop', function(e) { e.preventDefault(); zone.classList.remove('dragover'); if (e.dataTransfer.files.length) uploadFile(e.dataTransfer.files[0]); });
+        input.addEventListener('change', function() { if (input.files.length) uploadFile(input.files[0]); });
     }
 
     function uploadFile(file) {
         var zone = document.getElementById('upload-zone');
         zone.classList.add('uploading');
-
-        processFile(file)
-            .then(function(dataObj) {
-                zone.classList.remove('uploading');
-                var label = file.name.replace(/\.[^.]+$/, '').toUpperCase();
-                DATA[label] = dataObj;
-                saveData();
-                buildSidebar();
-                selectMonth(label);
-                showNotification(dataObj.meta.display + ' importado com sucesso — ' + dataObj.transactions.length + ' transacoes', 'success');
-            })
-            .catch(function() {
-                zone.classList.remove('uploading');
-                showNotification('Erro ao processar o arquivo', 'error');
-            });
+        processFile(file).then(function(dataObj) {
+            zone.classList.remove('uploading');
+            var label = file.name.replace(/\.[^.]+$/, '').toUpperCase();
+            DATA[label] = dataObj; saveData(); buildSidebar(); selectMonth(label);
+            showNotification(dataObj.meta.display + ' importado com sucesso — ' + dataObj.transactions.length + ' transacoes', 'success');
+        }).catch(function() {
+            zone.classList.remove('uploading');
+            showNotification('Erro ao processar o arquivo', 'error');
+        });
     }
 
     function deleteMonth(key) {
         if (!confirm('Remover ' + DATA[key].meta.display + '?')) return;
-        delete DATA[key];
-        saveData();
-        buildSidebar();
+        delete DATA[key]; saveData(); buildSidebar();
         var first = Object.keys(DATA)[0];
         if (first) selectMonth(first);
-        else {
-            document.getElementById('month-title').textContent = 'Sem dados';
-            document.getElementById('month-subtitle').textContent = 'Envie um arquivo .xlsx para comecar';
-        }
+        else { document.getElementById('month-title').textContent = 'Sem dados'; document.getElementById('month-subtitle').textContent = 'Envie um arquivo .xlsx para comecar'; }
         showNotification('Arquivo removido', 'success');
     }
 
@@ -994,21 +1130,84 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
     /* ============================================================
        Init
     ============================================================ */
-    function init() {
-        loadData();
-        if (Object.keys(DATA).length) {
-            buildSidebar();
-            var first = Object.keys(DATA)[0];
-            if (first) selectMonth(first);
+    async function init() {
+        await initUsers();
+
+        // Check if there's an active session
+        currentUser = getCurrentUser();
+
+        if (currentUser) {
+            loadData();
+            showDashboard();
+            if (Object.keys(DATA).length) {
+                buildSidebar();
+                var first = Object.keys(DATA)[0];
+                if (first) selectMonth(first);
+            } else {
+                document.getElementById('month-title').textContent = 'Bem-vindo';
+                document.getElementById('month-subtitle').textContent = isAdmin() ? 'Envie um arquivo .xlsx para comecar o dashboard' : 'Nenhum dado disponivel no momento';
+                buildSidebar();
+            }
+            setupUpload();
+            var footer = document.getElementById('footer');
+            if (footer) footer.textContent = 'Gerado em ' + new Date().toLocaleDateString('pt-BR') + ' \u2014 Dashboard Agencia';
         } else {
-            document.getElementById('month-title').textContent = 'Bem-vindo';
-            document.getElementById('month-subtitle').textContent = 'Envie um arquivo .xlsx para comecar o dashboard';
-            buildSidebar();
+            showLogin();
         }
-        setupUpload();
-        var footer = document.getElementById('footer');
-        if (footer) footer.textContent = 'Gerado em ' + new Date().toLocaleDateString('pt-BR') + ' \u2014 Dashboard Agencia';
     }
+
+    // Login form handler
+    document.getElementById('login-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        var username = document.getElementById('login-user').value.trim();
+        var password = document.getElementById('login-pass').value;
+        var errEl = document.getElementById('login-error');
+
+        if (!username || !password) { errEl.style.display = 'block'; errEl.textContent = 'Preencha todos os campos.'; return; }
+
+        var success = await login(username, password);
+        if (success) {
+            currentUser = getCurrentUser();
+            await init();
+        } else {
+            errEl.style.display = 'block';
+            errEl.textContent = 'Usuario ou senha invalidos.';
+        }
+    });
+
+    // New user form
+    document.getElementById('new-user-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        var username = document.getElementById('new-username').value.trim();
+        var password = document.getElementById('new-password').value;
+        var role = document.getElementById('new-role').value;
+
+        if (!username || !password) { showNotification('Preencha todos os campos', 'error'); return; }
+        if (username.length < 2) { showNotification('Nome de usuario deve ter pelo menos 2 caracteres', 'error'); return; }
+        if (password.length < 3) { showNotification('Senha deve ter pelo menos 3 caracteres', 'error'); return; }
+
+        var users = getUsers();
+        if (users[username]) { showNotification('Usuario "' + username + '" ja existe', 'error'); return; }
+
+        users[username] = { password: await sha256(password), role: role, createdAt: new Date().toISOString() };
+        saveUsers(users);
+        renderUsersList();
+        showNotification('Usuario "' + username + '" criado', 'success');
+        document.getElementById('new-username').value = '';
+        document.getElementById('new-password').value = '';
+    });
+
+    // Logout
+    document.getElementById('logout-link').addEventListener('click', function(e) {
+        e.preventDefault();
+        logout();
+    });
+
+    // Settings link (admin only)
+    document.getElementById('settings-link').addEventListener('click', function(e) {
+        e.preventDefault();
+        window.openUsersModal();
+    });
 
     init();
 })();
