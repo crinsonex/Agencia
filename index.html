@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ju Basilio Viagens</title>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root {
+  --bg: #f5f5f0;
+  --sidebar-bg: #fafaf7;
+  --card-bg: #ffffff;
+  --text: #1e1e1e;
+  --text-muted: #888;
+  --primary: #4f46e5;
+  --border: #e8e8e3;
+  --radius: 14px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  min-height: 100vh;
+  line-height: 1.5;
+}
+.sidebar {
+  width: 220px; min-width: 220px; background: var(--sidebar-bg);
+  border-right: 1px solid var(--border); padding: 32px 0;
+  display: flex; flex-direction: column;
+}
+.logo { padding: 0 24px 28px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+.logo span { font-size: 20px; font-weight: 700; color: var(--primary); letter-spacing: -0.5px; }
+.sidebar-menu { list-style: none; padding: 0 12px; }
+.sidebar-menu li,
+.menu-item-with-delete {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 10px 10px 16px; margin: 2px 0; border-radius: 10px;
+  font-size: 14px; font-weight: 500; color: var(--text-muted);
+  transition: all 0.2s; cursor: pointer;
+}
+.sidebar-menu li:hover,
+.menu-item-with-delete:hover { background: #eef; color: var(--text); }
+.sidebar-menu li.active,
+.menu-item-with-delete.active { background: var(--primary); color: #fff; font-weight: 600; }
+.delete-btn {
+  font-size: 14px; color: #ccc; cursor: pointer; padding: 2px 6px;
+  border-radius: 4px; transition: all 0.15s; line-height: 1;
+}
+.delete-btn:hover { color: #dc2626; background: rgba(220,38,38,0.1); }
+
+.upload-zone {
+  margin: 0 12px 16px; border: 2px dashed var(--border); border-radius: 12px;
+  padding: 18px 12px; text-align: center; cursor: pointer;
+  transition: all 0.2s; position: relative;
+}
+.upload-zone:hover { border-color: var(--primary); background: rgba(79,70,229,0.04); }
+.upload-zone.dragover { border-color: var(--primary); background: rgba(79,70,229,0.08); }
+.upload-zone.uploading { pointer-events: none; opacity: 0.6; }
+.upload-zone.uploading::after {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, transparent, var(--primary), transparent);
+  animation: uploading 1.2s infinite;
+}
+@keyframes uploading { 0%,100% { opacity:0.3; } 50% { opacity:1; } }
+.upload-icon { font-size: 22px; color: var(--primary); }
+.upload-text { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+.sidebar-footer {
+  margin-top: auto; padding: 16px 24px; font-size: 11px;
+  color: var(--text-muted); border-top: 1px solid var(--border);
+}
+
+.main { flex: 1; padding: 36px 40px; max-width: 1300px; overflow-x: auto; }
+.top-bar {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  margin-bottom: 32px; flex-wrap: wrap; gap: 12px;
+}
+.top-bar-left { flex: 1; }
+.top-bar h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
+.top-bar p { color: var(--text-muted); font-size: 14px; margin-top: 4px; }
+.tabs { display: flex; gap: 4px; }
+.tab {
+  padding: 8px 20px; border: 1px solid var(--border); border-radius: 8px;
+  background: transparent; color: var(--text-muted);
+  font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s;
+}
+.tab:hover { border-color: var(--primary); color: var(--text); }
+.tab.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+.view.hidden { display: none; }
+
+.kpi-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 14px; margin-bottom: 28px;
+}
+.kpi-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow);
+}
+.kpi-card .label { font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.kpi-card .value { font-size: 20px; font-weight: 700; margin-top: 6px; }
+
+.charts-row { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 28px; }
+.chart-box {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow);
+}
+.chart-box h3 { font-size: 13px; font-weight: 600; margin-bottom: 16px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.3px; }
+
+.panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow);
+  overflow: hidden; margin-bottom: 28px;
+}
+.panel-header { padding: 20px 24px; border-bottom: 1px solid var(--border); }
+.panel-header h3 { font-size: 14px; font-weight: 600; }
+
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead th {
+  text-align: left; padding: 10px 14px; border-bottom: 2px solid var(--border);
+  color: var(--text-muted); font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;
+}
+thead th.num { text-align: right; }
+tbody td {
+  padding: 11px 14px; border-bottom: 1px solid var(--border);
+  white-space: nowrap; max-width: 280px; overflow: hidden; text-overflow: ellipsis;
+}
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: #f9fafb; font-weight: 700; }
+tbody tr:last-child td { border-bottom: none; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+.badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.badge.PAGO { background: #dcfce7; color: #15803d; }
+.badge.PENDENTE { background: #fef3c7; color: #a16207; }
+.badge.VAZIO { background: #f3f4f6; color: #9ca3af; }
+
+.seller-grid { display: grid; gap: 10px; padding: 16px 24px; }
+.seller-card {
+  background: #fafafa; border-radius: 10px; padding: 14px 18px;
+  display: flex; align-items: center; gap: 14px;
+}
+.seller-card .avatar {
+  width: 38px; height: 38px; border-radius: 50%; background: var(--primary);
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; flex-shrink: 0;
+}
+.seller-card .info { flex: 1; min-width: 0; }
+.seller-card .info .name { font-weight: 600; font-size: 14px; }
+.seller-card .info .meta { font-size: 12px; color: var(--text-muted); }
+.seller-values { text-align: right; flex-shrink: 0; }
+.seller-values .sv-total { font-size: 15px; font-weight: 700; }
+.seller-values .sv-liq, .seller-values .sv-com { font-size: 11px; color: var(--text-muted); }
+
+.summary-list { list-style: none; }
+.summary-list li {
+  padding: 8px 0; font-size: 13px; color: var(--text-muted);
+  border-bottom: 1px dashed var(--border);
+  font-family: 'Consolas', 'Courier New', monospace;
+}
+.summary-list li:last-child { border-bottom: none; }
+
+.footer { text-align: center; padding: 24px 0 36px; font-size: 11px; color: var(--text-muted); }
+
+.notification {
+  position: fixed; top: 20px; right: 20px; padding: 14px 24px; border-radius: 10px;
+  font-size: 13px; font-weight: 500; z-index: 1000;
+  animation: slideIn 0.3s ease; max-width: 360px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+.notification.success { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+.notification.error { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
+.notification.fade-out { opacity: 0; transition: opacity 0.5s; }
+@keyframes slideIn { from { transform: translateX(100%); opacity:0; } to { transform: translateX(0); opacity:1; } }
+
+@media (max-width: 900px) {
+  body { flex-direction: column; }
+  .sidebar { width: 100%; min-width: unset; flex-direction: row; padding: 12px; gap: 8px; overflow-x: auto; }
+  .sidebar .logo { border-bottom: none; padding: 0 8px; }
+  .sidebar-menu { display: flex; padding: 0; gap: 4px; }
+  .upload-zone { margin: 0 4px 8px; padding: 12px 8px; min-width: 120px; }
+  .upload-icon, .upload-text, .delete-btn, .sidebar-footer { display: none; }
+  .main { padding: 20px 16px; }
+  .charts-row { grid-template-columns: 1fr; }
+  .top-bar { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+
+<nav class="sidebar">
+    <div class="logo"><span>&#9670; Ju Basilio Viagens</span></div>
+
+    <div class="upload-zone" id="upload-zone">
+        <input type="file" id="file-input" accept=".xlsx,.xls,.csv" hidden>
+        <div class="upload-icon">&#8593;</div>
+        <div class="upload-text">Enviar .xlsx / .csv</div>
+    </div>
+
+    <ul class="sidebar-menu" id="sidebar-menu"></ul>
+
+    <div class="sidebar-footer">
+        <span id="month-count"></span>
+    </div>
+</nav>
+
+<main class="main">
+    <div class="top-bar">
+        <div class="top-bar-left">
+            <h1 id="month-title">-</h1>
+            <p id="month-subtitle">-</p>
+        </div>
+
+        <div class="tabs" id="view-tabs">
+            <button class="tab active" data-tab="mensal" onclick="switchTab('mensal')">Mensal</button>
+            <button class="tab" data-tab="anual" onclick="switchTab('anual')">Anual</button>
+        </div>
+    </div>
+
+    <!-- ===== MENSAL VIEW ===== -->
+    <div id="view-mensal" class="view">
+        <div class="kpi-grid" id="kpi-grid"></div>
+        <div class="charts-row">
+            <div class="chart-box"><h3>Faturamento por Vendedor</h3><canvas id="chart-bar"></canvas></div>
+            <div class="chart-box"><h3>Por Produto</h3><canvas id="chart-donut"></canvas></div>
+        </div>
+        <div id="seller-panels"></div>
+        <div class="panel">
+            <div class="panel-header"><h3>Transacoes Detalhadas</h3></div>
+            <div class="table-wrap">
+                <table><thead><tr>
+                    <th>ID</th><th>Nome</th><th>Produto</th>
+                    <th>Status</th><th class="num">Total</th>
+                    <th class="num">Taxa</th><th class="num">Liquido</th>
+                    <th class="num">Comissao</th><th>Obs</th>
+                </tr></thead><tbody id="tx-body"></tbody></table>
+            </div>
+        </div>
+        <div class="panel">
+            <div class="panel-header"><h3>Notas / Comissoes / Resumo</h3></div>
+            <div style="padding:16px 24px">
+                <ul class="summary-list" id="summary-list"></ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== ANUAL VIEW ===== -->
+    <div id="view-anual" class="view hidden">
+        <div class="kpi-grid" id="kpi-anual-grid"></div>
+        <div class="panel">
+            <div class="panel-header"><h3>Evolucao Mensal — Faturamento</h3></div>
+            <div style="padding:20px">
+                <canvas id="chart-line" height="100"></canvas>
+            </div>
+        </div>
+        <div class="charts-row">
+            <div class="chart-box"><h3>Vendas por Mes</h3><canvas id="chart-sales-bar"></canvas></div>
+            <div class="chart-box"><h3>Vendedores por Mes</h3><canvas id="chart-sellers-stacked"></canvas></div>
+        </div>
+        <div class="panel">
+            <div class="panel-header"><h3>Resumo Anual por Mes</h3></div>
+            <div class="table-wrap">
+                <table><thead><tr>
+                    <th>Mes</th><th class="num">Faturamento</th><th class="num">Taxas</th>
+                    <th class="num">Liquido</th><th class="num">Comissoes</th>
+                    <th class="num">Pagos</th><th class="num">Pendentes</th>
+                </tr></thead><tbody id="anual-tbody"></tbody></table>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer" id="footer"></div>
+</main>
+
+<script>
+(function () {
+    'use strict';
+
+    /* ============================================================
+       Month / display
+    ============================================================ */
+    var MONTH_NAMES = {
+        'JANEIRO': 'Janeiro', 'FEVEREIRO': 'Fevereiro', 'MARCO': 'Marco',
+        'ABRIL': 'Abril', 'MAIO': 'Maio', 'JUNHO': 'Junho',
+        'JULHO': 'Julho', 'AGOSTO': 'Agosto', 'SETEMBRO': 'Setembro',
+        'OUTUBRO': 'Outubro', 'NOVEMBRO': 'Novembro', 'DEZEMBRO': 'Dezembro',
+    };
+
+    var STORAGE_KEY = 'ju_basilio_data';
+    var DATA = {};
+    var currentMonth = null;
+    var currentTab = 'mensal';
+    var COLORS = ['#4f46e5','#06b6d4','#f59e0b','#10b981','#f97316','#ec4899','#6366f1','#14b8a6'];
+    var barChart = null, donutChart = null, lineChart = null, salesBarChart = null, sellersStackedChart = null;
+
+    /* ============================================================
+       Helpers — same behavior as Python _money()
+    ============================================================ */
+    function _money(v) {
+        if (v == null || v === '') return 0;
+        if (typeof v === 'number') return isNaN(v) ? 0 : Math.abs(v);
+        var s = String(v).replace(/\s/g, '').replace('R$', '');
+        // Brazilian: dots = thousands sep, comma = decimal
+        if (s.indexOf(',') > -1) {
+            s = s.replace(/\./g, '').replace(',', '.');
+        }
+        // US style (no comma)
+        var n = parseFloat(s);
+        return isNaN(n) ? 0 : Math.abs(n);
+    }
+
+    function moneySign(v) {
+        var s = String(v).replace(/\s/g, '').replace('R$', '');
+        if (s.indexOf(',') > -1) s = s.replace(/\./g, '').replace(',', '.');
+        var n = parseFloat(s);
+        if (isNaN(n)) return 0;
+        return n;  // keep sign
+    }
+
+    function fmt(v) {
+        return 'R$ ' + Number(v).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+    }
+
+    /* ============================================================
+       Parse XLSX (.xlsx / .xls) — like Python parse_xlsx()
+       Colunas: Id, Nome, Produto, Status, Total, Taxa, Liquido, Comissao, Obs, ...
+    ============================================================ */
+    function parseXlsxRows(ws) {
+        var rows = XLSX.utils.sheet_to_json(ws, {header: 1, defval: ''});
+        var transactions = [];
+        var summary = [];
+
+        for (var i = 0; i < rows.length; i++) {
+            var vals = rows[i].slice(0, 12);
+            while (vals.length < 12) vals.push('');
+            var first = String(vals[0]).trim();
+            if (!first) continue;
+
+            var idLike = first.replace(/[.\-]/g, '');
+            var isIdMatch = false;
+            if (/[a-zA-Z]*\d{5,}/.test(idLike) || /^[A-Za-z]{3,}$/.test(idLike)) isIdMatch = true;
+
+            if (!isIdMatch) {
+                var parts = vals.filter(function(v){ return v !== ''; }).map(function(v){ return String(v).trim(); });
+                if (parts.length) summary.push(parts.join(' | '));
+                continue;
+            }
+
+            var status = String(vals[3]).trim().toUpperCase();
+            var t = {
+                id: first,
+                nome: String(vals[1]).trim(),
+                produto: String(vals[2]).trim(),
+                status: status,
+                total: _money(vals[4]),
+                taxa: _money(vals[5]),
+                liquido: _money(vals[6]),
+                comissao: _money(vals[7]),
+                obs: String(vals[8]).trim(),
+            };
+            transactions.push(t);
+
+            var totalAg = _money(vals[9]);
+            var aPagar = _money(vals[11]);
+            var obsParts = [];
+            if (t.obs) obsParts.push(t.obs);
+            if (totalAg > 0) obsParts.push('Total agencia: ' + fmt(totalAg));
+            if (aPagar > 0) obsParts.push('A pagar: ' + fmt(aPagar));
+            if (obsParts.length) summary.push('[' + t.nome + '] ' + obsParts.join(' | '));
+        }
+        return {transactions: transactions, summary: summary};
+    }
+
+    /* ============================================================
+       Parse messy CSV — like Python _parse_csv_text()
+       May have everything in one column.
+    ============================================================ */
+    function isId(s) {
+        var c = s.replace(/[.-]/g, '');
+        return /[a-zA-Z]*\d{5,}/.test(c) || /^[A-Za-z]{3,}$/.test(c);
+    }
+
+    function parseMessyCsv(text) {
+        var lines = text.split(/\r?\n/);
+        var transactions = [];
+        var summary = [];
+        var pendingLine = null;
+        var inSummary = false;
+
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i].trim().replace(/^"|"$/g, '').trim();
+            if (!line) continue;
+
+            if (line.indexOf('Comissao') !== -1 || line.indexOf('Obs.') === 0 || line.charAt(0) === '\x0c') {
+                inSummary = true;
+                summary.push(line);
+                continue;
+            }
+            if (line.toLowerCase().indexOf('id') === 0) continue;
+
+            var sellerNames = ['Giulia', 'Amanda', 'Juliana', 'Sofia'];
+            var isSellerLine = false;
+            for (var si = 0; si < sellerNames.length; si++) {
+                if (line.indexOf(sellerNames[si]) === 0) { isSellerLine = true; break; }
+            }
+            if (inSummary || line.indexOf('R$') === 0 || isSellerLine || line.indexOf('723,') === 0 || line.indexOf('(erro)') === 0) {
+                summary.push(line);
+                continue;
+            }
+
+            if (pendingLine !== null) {
+                line = pendingLine + ' ' + line;
+                pendingLine = null;
+                inSummary = false;
+            }
+
+            var cols = line.split(/\s+/);
+            if (!cols.length) continue;
+
+            var first = cols[0];
+            if (!isId(first)) {
+                summary.push(line);
+                continue;
+            }
+
+            var rest = line.substring(first.length).trim();
+            var pIdx = rest.indexOf(' ');
+            if (pIdx === -1) continue;
+            var nome = rest.substring(0, pIdx).trim();
+            rest = rest.substring(pIdx + 1).trim();
+
+            var status = '';
+            if (rest.indexOf('PAGO') !== -1) {
+                status = 'PAGO';
+                rest = rest.replace('PAGO', '').trim();
+            } else if (rest.indexOf('PENDENTE') !== -1) {
+                status = 'PENDENTE';
+                rest = rest.replace('PENDENTE', '').trim();
+            }
+
+            var moneyVals = [];
+            var m, moneyRe = /R\$\s*[\d.,]+/g;
+            while ((m = moneyRe.exec(rest)) !== null) moneyVals.push(m[0]);
+
+            var rIdx = rest.indexOf('R$');
+            var produto = rIdx !== -1 ? rest.substring(0, rIdx).trim() : rest.trim();
+
+            if (!moneyVals.length && rest.charAt(rest.length - 1) === '-') {
+                pendingLine = line;
+                continue;
+            }
+
+            transactions.push({
+                id: first,
+                nome: nome,
+                produto: produto,
+                status: status,
+                total: moneyVals.length > 0 ? _money(moneyVals[0]) : 0,
+                taxa: moneyVals.length > 1 ? _money(moneyVals[1]) : 0,
+                liquido: moneyVals.length > 2 ? _money(moneyVals[2]) : 0,
+                comissao: 0,
+                obs: ''
+            });
+        }
+        return {transactions: transactions, summary: summary};
+    }
+
+    /* ============================================================
+       File processing — like Python compute_kpis()
+    ============================================================ */
+    function computeKpis(transactions, monthName) {
+        var kpis = {
+            total: 0, taxas: 0, liquido: 0, comissoes: 0,
+            pagos: 0, pendentes: 0, display: monthName,
+            vendedores: {}, produtos: {}
+        };
+        for (var i = 0; i < transactions.length; i++) {
+            var t = transactions[i];
+            var tt = t.total, tx = t.taxa, ll = t.liquido;
+            kpis.total += tt; kpis.taxas += tx; kpis.liquido += ll;
+            kpis.comissoes += (t.comissao || 0);
+
+            var st = (t.status || '').toUpperCase();
+            if (st.indexOf('PAGO') !== -1) kpis.pagos++;
+            else if (st.indexOf('PENDENTE') !== -1) kpis.pendentes++;
+
+            var nome = t.nome;
+            if (nome) {
+                if (!kpis.vendedores[nome]) {
+                    kpis.vendedores[nome] = {total:0, taxas:0, liquido:0, comissao:0, count:0, pagos:0, pendentes:0};
+                }
+                var v = kpis.vendedores[nome];
+                v.total += tt; v.taxas += tx; v.liquido += ll;
+                v.comissao += (t.comissao || 0);
+                v.count++;
+                if (st.indexOf('PAGO') !== -1) v.pagos++;
+                else if (st.indexOf('PENDENTE') !== -1) v.pendentes++;
+            }
+
+            var prod = t.produto || 'N/A';
+            if (prod.length > 40) prod = prod.substring(0,37) + '...';
+            kpis.produtos[prod] = (kpis.produtos[prod] || 0) + tt;
+        }
+        return kpis;
+    }
+
+    function processFile(file) {
+        return new Promise(function(resolve, reject) {
+            var name = file.name;
+            var ext = name.split('.').pop().toLowerCase();
+            var label = name.replace(/\.[^.]+$/, '').toUpperCase();
+            var display = MONTH_NAMES[label] || label;
+
+            function finish(transactions, summary) {
+                var kpis = computeKpis(transactions, display);
+                resolve({
+                    meta: {display: display, file: name},
+                    kpi: kpis,
+                    transactions: transactions,
+                    summary: summary
+                });
+            }
+
+            if (ext === 'csv') {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var text = e.target.result;
+                    // Try SheetJS CSV first
+                    try {
+                        var wb = XLSX.read(text, {type: 'string'});
+                        var ws = wb.Sheets[wb.SheetNames[0]];
+                        var rows = XLSX.utils.sheet_to_json(ws, {header: 1});
+                        // If we got multiple columns, use XLSX result
+                        if (rows.length > 1 && rows[0] && rows[0].length > 1) {
+                            var parsed = parseXlsxRows(ws);
+                            finish(parsed.transactions, parsed.summary);
+                            return;
+                        }
+                    } catch(e) { /* fallback */ }
+                    // Fallback: messy CSV parser
+                    var r = parseMessyCsv(text);
+                    finish(r.transactions, r.summary);
+                };
+                reader.readAsText(file, 'utf-8');
+            } else {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var data = new Uint8Array(e.target.result);
+                    var wb = XLSX.read(data, {type: 'array'});
+                    var ws = wb.Sheets[wb.SheetNames[0]];
+                    var parsed = parseXlsxRows(ws);
+                    finish(parsed.transactions, parsed.summary);
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        });
+    }
+
+    /* ============================================================
+       Storage (localStorage)
+    ============================================================ */
+    function saveData() {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA));
+        } catch(e) { /* quota exceeded — data only lives in memory */ }
+    }
+
+    function loadData() {
+        try {
+            var raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) DATA = JSON.parse(raw);
+        } catch(e) { DATA = {}; }
+    }
+
+    /* ============================================================
+       Sidebar
+    ============================================================ */
+    function buildSidebar() {
+        var menu = document.getElementById('sidebar-menu');
+        menu.innerHTML = '';
+        var keys = Object.keys(DATA);
+        if (!keys.length) {
+            document.getElementById('month-count').textContent = 'Nenhum mes';
+            return;
+        }
+        keys.forEach(function(key, i) {
+            var li = document.createElement('li');
+            li.classList.add('menu-item-with-delete');
+            li.dataset.month = key;
+            if (i === 0 && !currentMonth) li.classList.add('active');
+            if (key === currentMonth) li.classList.add('active');
+
+            var nameSpan = document.createElement('span');
+            nameSpan.textContent = DATA[key].meta.display;
+            nameSpan.style.cursor = 'pointer';
+            nameSpan.style.flex = '1';
+            nameSpan.onclick = function() { selectMonth(key); };
+
+            var delBtn = document.createElement('span');
+            delBtn.innerHTML = '&#10005;';
+            delBtn.className = 'delete-btn';
+            delBtn.title = 'Remover ' + DATA[key].meta.display;
+            delBtn.onclick = function(e) {
+                e.stopPropagation();
+                deleteMonth(key);
+            };
+
+            li.appendChild(nameSpan);
+            li.appendChild(delBtn);
+            menu.appendChild(li);
+        });
+        document.getElementById('month-count').textContent = keys.length + ' mes' + (keys.length > 1 ? 'es' : '');
+    }
+
+    /* ============================================================
+       Monthly view
+    ============================================================ */
+    function selectMonth(key) {
+        currentMonth = key;
+        var d = DATA[key];
+        if (!d) return;
+        var k = d.kpi;
+
+        document.querySelectorAll('.sidebar-menu li, .sidebar-menu .menu-item-with-delete').forEach(function(el) {
+            el.classList.toggle('active', el.dataset.month === key);
+        });
+
+        document.getElementById('month-title').textContent = k.display || key;
+        var tot = k.pagos + k.pendentes;
+        var conv = tot > 0 ? Math.round(k.pagos / tot * 100) + '% pago' : '\u2014';
+        document.getElementById('month-subtitle').textContent =
+            'Faturamento, comissoes e resultado \u2014 ' + conv + ' (' + tot + ' vendas)';
+
+        // KPI cards
+        var grid = document.getElementById('kpi-grid');
+        grid.innerHTML = '';
+        [
+            {l:'Faturamento Bruto', v:fmt(k.total)},
+            {l:'Total Taxas', v:fmt(k.taxas)},
+            {l:'Liquido s/ Taxas', v:fmt(k.liquido)},
+            {l:'Total Comissoes', v:fmt(k.comissoes)},
+            {l:'Vendas Pagas', v:k.pagos + ' de ' + tot},
+            {l:'Vendas Pendentes', v:k.pendentes}
+        ].forEach(function(item) {
+            var div = document.createElement('div');
+            div.className = 'kpi-card';
+            div.innerHTML = '<div class="label">' + item.l + '</div><div class="value">' + item.v + '</div>';
+            grid.appendChild(div);
+        });
+
+        // Seller cards
+        var sellers = document.getElementById('seller-panels');
+        sellers.innerHTML = '';
+        var sellerKeys = Object.keys(k.vendedores);
+        if (sellerKeys.length) {
+            var panel = document.createElement('div');
+            panel.className = 'panel';
+            panel.innerHTML = '<div class="panel-header"><h3>Por Vendedor</h3></div>';
+            var sgrid = document.createElement('div');
+            sgrid.className = 'seller-grid';
+            sellerKeys.forEach(function(name) {
+                var s = k.vendedores[name];
+                var initials = name.split(' ').map(function(w){return w[0];}).join('').substring(0,2).toUpperCase();
+                var card = document.createElement('div');
+                card.className = 'seller-card';
+                card.innerHTML =
+                    '<div class="avatar">' + initials + '</div>' +
+                    '<div class="info">' +
+                        '<div class="name">' + name + '</div>' +
+                        '<div class="meta">' + s.count + ' vendas | ' + s.pagos + ' pagas | ' + s.pendentes + ' pendentes</div>' +
+                    '</div>' +
+                    '<div class="seller-values">' +
+                        '<div class="sv-total">' + fmt(s.total) + '</div>' +
+                        '<div class="sv-liq">liquido: ' + fmt(s.liquido) + '</div>' +
+                        '<div class="sv-com">comissao: ' + fmt(s.comissao) + '</div>' +
+                    '</div>';
+                sgrid.appendChild(card);
+            });
+            panel.appendChild(sgrid);
+            sellers.appendChild(panel);
+        }
+
+        // Bar chart — sellers
+        if (barChart) barChart.destroy();
+        barChart = new Chart(document.getElementById('chart-bar'), {
+            type: 'bar',
+            data: {
+                labels: sellerKeys,
+                datasets: [{
+                    data: sellerKeys.map(function(n){ return k.vendedores[n].total; }),
+                    backgroundColor: COLORS.slice(0, sellerKeys.length),
+                    borderRadius: 6,
+                    barThickness: 40,
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { callback: function(v){ return fmt(v); } } }
+                }
+            }
+        });
+
+        // Donut — products
+        var pLabels = Object.keys(k.produtos);
+        if (donutChart) donutChart.destroy();
+        donutChart = new Chart(document.getElementById('chart-donut'), {
+            type: 'doughnut',
+            data: {
+                labels: pLabels,
+                datasets: [{
+                    data: pLabels.map(function(n){ return k.produtos[n]; }),
+                    backgroundColor: COLORS.slice(0, pLabels.length),
+                    borderWidth: 0,
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true, font: {size: 11} } }
+                }
+            }
+        });
+
+        // Tx table
+        var tbody = document.getElementById('tx-body');
+        tbody.innerHTML = '';
+        d.transactions.forEach(function(t) {
+            var tr = document.createElement('tr');
+            var stClass = t.status && t.status.toUpperCase().indexOf('PAGO') !== -1 ? 'PAGO' :
+                          (t.status && t.status.toUpperCase().indexOf('PENDENTE') !== -1 ? 'PENDENTE' : 'VAZIO');
+            var stText = t.status || '\u2014';
+            tr.innerHTML =
+                '<td>' + (t.id||'') + '</td>' +
+                '<td>' + (t.nome||'') + '</td>' +
+                '<td>' + (t.produto||'') + '</td>' +
+                '<td><span class="badge ' + stClass + '">' + stText + '</span></td>' +
+                '<td class="num">' + fmt(t.total||0) + '</td>' +
+                '<td class="num">' + fmt(t.taxa||0) + '</td>' +
+                '<td class="num">' + fmt(t.liquido||0) + '</td>' +
+                '<td class="num">' + fmt(t.comissao||0) + '</td>' +
+                '<td>' + (t.obs||'') + '</td>';
+            tbody.appendChild(tr);
+        });
+
+        // Summary
+        var sumList = document.getElementById('summary-list');
+        sumList.innerHTML = '';
+        if (d.summary && d.summary.length) {
+            d.summary.forEach(function(line) {
+                var li = document.createElement('li');
+                li.textContent = line;
+                sumList.appendChild(li);
+            });
+        }
+    }
+
+    /* ============================================================
+       Annual view
+    ============================================================ */
+    function renderAnnual() {
+        var keys = Object.keys(DATA);
+        var MONTH_ORDER = [
+            'JANEIRO', 'FEVEREIRO', 'MARCO', 'ABRIL', 'MAIO', 'JUNHO',
+            'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'
+        ];
+        keys.sort(function(a,b){
+            return MONTH_ORDER.indexOf(a) - MONTH_ORDER.indexOf(b);
+        });
+
+        var months = [];
+        var allSellers = {};
+        keys.forEach(function(key) {
+            var k = DATA[key].kpi;
+            months.push({
+                month: key, display: k.display,
+                total: k.total, taxas: k.taxas, liquido: k.liquido,
+                comissoes: k.comissoes, pagos: k.pagos, pendentes: k.pendentes
+            });
+            Object.keys(k.vendedores).forEach(function(name) {
+                if (!allSellers[name]) allSellers[name] = {};
+                allSellers[name][key] = k.vendedores[name].total;
+            });
+        });
+
+        if (!months.length) {
+            document.getElementById('kpi-anual-grid').innerHTML = '<p style="padding:20px">Nenhum mes disponivel</p>';
+            return;
+        }
+
+        var grandTotal = 0, grandTaxas = 0, grandLiquido = 0, grandComissoes = 0, grandPagos = 0, grandPendentes = 0;
+        months.forEach(function(m) {
+            grandTotal += m.total; grandTaxas += m.taxas; grandLiquido += m.liquido;
+            grandComissoes += m.comissoes; grandPagos += m.pagos; grandPendentes += m.pendentes;
+        });
+
+        var grid = document.getElementById('kpi-anual-grid');
+        grid.innerHTML = '';
+        [
+            {l:'Faturamento Anual', v:fmt(grandTotal)},
+            {l:'Taxas Anual', v:fmt(grandTaxas)},
+            {l:'Liquido Anual', v:fmt(grandLiquido)},
+            {l:'Comissoes Anual', v:fmt(grandComissoes)},
+            {l:'Total Vendas', v:grandPagos + ' pagas / ' + grandPendentes + ' pendentes'},
+            {l:'Meses', v:months.length}
+        ].forEach(function(item) {
+            var div = document.createElement('div');
+            div.className = 'kpi-card';
+            div.innerHTML = '<div class="label">' + item.l + '</div><div class="value">' + item.v + '</div>';
+            grid.appendChild(div);
+        });
+
+        // Line chart
+        if (lineChart) lineChart.destroy();
+        lineChart = new Chart(document.getElementById('chart-line'), {
+            type: 'line',
+            data: {
+                labels: months.map(function(m){ return m.display; }),
+                datasets: [
+                    { label: 'Faturamento', data: months.map(function(m){ return m.total; }), borderColor: '#4f46e5', backgroundColor: 'rgba(79,70,229,0.08)', fill: true, tension: 0.3, pointRadius: 5, pointHoverRadius: 7 },
+                    { label: 'Liquido s/ Taxas', data: months.map(function(m){ return m.liquido; }), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.08)', fill: true, tension: 0.3, pointRadius: 5, pointHoverRadius: 7 },
+                    { label: 'Taxas', data: months.map(function(m){ return m.taxas; }), borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.06)', fill: true, tension: 0.3, pointRadius: 4, pointHoverRadius: 6 }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'top', labels: { padding: 16, usePointStyle: true } }, tooltip: { callbacks: { label: function(ctx){ return ctx.dataset.label + ': ' + fmt(ctx.parsed.y); } } } },
+                scales: { y: { beginAtZero: true, ticks: { callback: function(v){ return fmt(v); } } } }
+            }
+        });
+
+        // Sales bar
+        if (salesBarChart) salesBarChart.destroy();
+        salesBarChart = new Chart(document.getElementById('chart-sales-bar'), {
+            type: 'bar',
+            data: {
+                labels: months.map(function(m){ return m.display; }),
+                datasets: [
+                    { label: 'Pagas', data: months.map(function(m){ return m.pagos; }), backgroundColor: '#16a34a', borderRadius: 4, barPercentage: 0.6 },
+                    { label: 'Pendentes', data: months.map(function(m){ return m.pendentes; }), backgroundColor: '#f59e0b', borderRadius: 4, barPercentage: 0.6 }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'top', labels: { usePointStyle: true } } },
+                scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }
+            }
+        });
+
+        // Sellers stacked
+        var sellerNames = Object.keys(allSellers);
+        if (sellersStackedChart) sellersStackedChart.destroy();
+        sellersStackedChart = new Chart(document.getElementById('chart-sellers-stacked'), {
+            type: 'bar',
+            data: {
+                labels: months.map(function(m){ return m.display; }),
+                datasets: sellerNames.map(function(name, i) {
+                    return {
+                        label: name,
+                        data: months.map(function(m) { return (allSellers[name] && allSellers[name][m.month]) || 0; }),
+                        backgroundColor: COLORS[i % COLORS.length],
+                        borderRadius: 2,
+                    };
+                })
+            },
+            options: {
+                responsive: true,
+                scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, ticks: { callback: function(v){ return fmt(v); } } } },
+                plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, font: {size: 11}, padding: 10 } } }
+            }
+        });
+
+        // Annual table
+        var tbody = document.getElementById('anual-tbody');
+        tbody.innerHTML = '';
+        months.forEach(function(m) {
+            var tr = document.createElement('tr');
+            tr.innerHTML = '<td>' + m.display + '</td>' +
+                '<td class="num">' + fmt(m.total) + '</td>' +
+                '<td class="num">' + fmt(m.taxas) + '</td>' +
+                '<td class="num">' + fmt(m.liquido) + '</td>' +
+                '<td class="num">' + fmt(m.comissoes) + '</td>' +
+                '<td class="num">' + m.pagos + '</td>' +
+                '<td class="num">' + m.pendentes + '</td>';
+            tbody.appendChild(tr);
+        });
+        var tr = document.createElement('tr');
+        tr.style.fontWeight = '700';
+        tr.innerHTML = '<td>TOTAL</td>' +
+            '<td class="num">' + fmt(grandTotal) + '</td>' +
+            '<td class="num">' + fmt(grandTaxas) + '</td>' +
+            '<td class="num">' + fmt(grandLiquido) + '</td>' +
+            '<td class="num">' + fmt(grandComissoes) + '</td>' +
+            '<td class="num">' + grandPagos + '</td>' +
+            '<td class="num">' + grandPendentes + '</td>';
+        tbody.appendChild(tr);
+    }
+
+    /* ============================================================
+       Tab switching
+    ============================================================ */
+    window.switchTab = function(tab) {
+        currentTab = tab;
+        document.querySelectorAll('.tab').forEach(function(el) {
+            el.classList.toggle('active', el.dataset.tab === tab);
+        });
+        document.getElementById('view-mensal').classList.toggle('hidden', tab !== 'mensal');
+        document.getElementById('view-anual').classList.toggle('hidden', tab !== 'anual');
+
+        var title = document.getElementById('month-title');
+        var subtitle = document.getElementById('month-subtitle');
+        if (tab === 'mensal') {
+            title.textContent = DATA && currentMonth ? (DATA[currentMonth].meta.display || '-') : '-';
+        } else {
+            title.textContent = 'Visao Anual';
+            subtitle.textContent = 'Evolucao dos resultados ao longo dos meses';
+            renderAnnual();
+        }
+    };
+
+    /* ============================================================
+       Upload
+    ============================================================ */
+    function setupUpload() {
+        var zone = document.getElementById('upload-zone');
+        var input = document.getElementById('file-input');
+
+        zone.addEventListener('click', function() { input.click(); });
+        zone.addEventListener('dragover', function(e) { e.preventDefault(); zone.classList.add('dragover'); });
+        zone.addEventListener('dragleave', function() { zone.classList.remove('dragover'); });
+        zone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            zone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) uploadFile(e.dataTransfer.files[0]);
+        });
+        input.addEventListener('change', function() {
+            if (input.files.length) uploadFile(input.files[0]);
+        });
+    }
+
+    function uploadFile(file) {
+        var zone = document.getElementById('upload-zone');
+        zone.classList.add('uploading');
+
+        processFile(file)
+            .then(function(dataObj) {
+                zone.classList.remove('uploading');
+                var label = file.name.replace(/\.[^.]+$/, '').toUpperCase();
+                DATA[label] = dataObj;
+                saveData();
+                buildSidebar();
+                selectMonth(label);
+                showNotification(dataObj.meta.display + ' importado com sucesso — ' + dataObj.transactions.length + ' transacoes', 'success');
+            })
+            .catch(function() {
+                zone.classList.remove('uploading');
+                showNotification('Erro ao processar o arquivo', 'error');
+            });
+    }
+
+    function deleteMonth(key) {
+        if (!confirm('Remover ' + DATA[key].meta.display + '?')) return;
+        delete DATA[key];
+        saveData();
+        buildSidebar();
+        var first = Object.keys(DATA)[0];
+        if (first) selectMonth(first);
+        else {
+            document.getElementById('month-title').textContent = 'Sem dados';
+            document.getElementById('month-subtitle').textContent = 'Envie um arquivo .xlsx para comecar';
+        }
+        showNotification('Arquivo removido', 'success');
+    }
+
+    /* ============================================================
+       Notifications
+    ============================================================ */
+    function showNotification(msg, type) {
+        var existing = document.querySelector('.notification');
+        if (existing) existing.remove();
+        var div = document.createElement('div');
+        div.className = 'notification ' + type;
+        div.textContent = msg;
+        document.body.appendChild(div);
+        setTimeout(function() { div.classList.add('fade-out'); }, 3000);
+        setTimeout(function() { div.remove(); }, 3500);
+    }
+
+    /* ============================================================
+       Init
+    ============================================================ */
+    function init() {
+        loadData();
+        if (Object.keys(DATA).length) {
+            buildSidebar();
+            var first = Object.keys(DATA)[0];
+            if (first) selectMonth(first);
+        } else {
+            document.getElementById('month-title').textContent = 'Bem-vindo';
+            document.getElementById('month-subtitle').textContent = 'Envie um arquivo .xlsx para comecar o dashboard';
+            buildSidebar();
+        }
+        setupUpload();
+        var footer = document.getElementById('footer');
+        if (footer) footer.textContent = 'Gerado em ' + new Date().toLocaleDateString('pt-BR') + ' \u2014 Dashboard Agencia';
+    }
+
+    init();
+})();
+</script>
+</body>
+</html>
