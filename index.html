@@ -115,6 +115,10 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 .user-list-actions button{padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;font-size:12px;transition:all .15s}
 .user-list-actions button:hover{border-color:var(--danger);color:var(--danger)}
 .role-badge{font-size:10px;padding:1px 6px;border-radius:4px;color:#fff}
+.login-card .pw-note{font-size:12px;color:#a16207;background:#fef3c7;padding:8px 12px;border-radius:8px;margin-bottom:16px}
+#pw-rules div{padding:2px 0;transition:color .2s}
+#pw-rules div.pass{color:#15803d}
+#pw-rules div.fail{color:#dc2626}
 @media(max-width:900px){body{flex-direction:column}.dashboard-layout{flex-direction:column}.sidebar{width:100%;min-width:unset;flex-direction:row;padding:12px;gap:8px;overflow-x:auto}.sidebar .logo{border-bottom:none;padding:0 8px}.sidebar-menu{display:flex;padding:0;gap:4px}.upload-zone{margin:0 4px 8px;padding:12px 8px;min-width:120px}.upload-icon,.upload-text,.delete-btn,.sidebar-footer{display:none}.main{padding:20px 16px}.charts-row{grid-template-columns:1fr}.top-bar{flex-direction:column}.modal{width:90vw;margin:0 20px}}
 </style>
 </head>
@@ -133,6 +137,29 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
       <button type="submit" class="login-btn">Entrar</button>
       <div id="login-error" class="login-error"></div>
       <div id="login-ok" class="login-ok">Login OK! Redirecionando...</div>
+    </form>
+  </div>
+</div>
+
+<!-- FIRST LOGIN — change password screen -->
+<div id="first-login-screen" style="display:none">
+  <div class="login-card">
+    <h2>Ju Basilio Viagens</h2>
+    <p>Primeiro acesso — crie sua senha pessoal</p>
+    <div class="pw-note" id="pw-requirement-note" style="display:block">A senha padrao deve ser trocada agora.</div>
+    <form id="first-login-form">
+      <label for="new-pw">Nova senha</label>
+      <input type="password" id="new-pw" placeholder="Digite sua nova senha" required>
+      <div id="pw-rules" style="font-size:11px;color:var(--text-muted);margin:-8px 0 12px 0">
+        <div id="rule-length">6+ caracteres</div>
+        <div id="rule-upper">1 letra maiuscula</div>
+        <div id="rule-number">1 numero</div>
+        <div id="rule-name">Nao pode conter seu nome</div>
+      </div>
+      <label for="confirm-pw">Confirmar senha</label>
+      <input type="password" id="confirm-pw" placeholder="Confirme a nova senha" required>
+      <button type="submit" class="login-btn">Salvar senha</button>
+      <div id="first-login-error" class="login-error"></div>
     </form>
   </div>
 </div>
@@ -236,6 +263,9 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 
     /* ---- Hash ---- */
     function hashPw(t){var h=5381;for(var i=0;i<t.length;i++){h=((h<<5)+h)+t.charCodeAt(i);h=h&h;}return Math.abs(h).toString(36);}
+
+    /* ---- Default password for new users ---- */
+    var DEFAULT_PW = 'Mudar@2026';
 
     /* ---- Storage ---- */
     var UK='ju_basilio_users',SK='ju_basilio_session',DK='ju_basilio_data';
@@ -542,9 +572,9 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
         list.onclick=function(e){var b=e.target.closest('[data-action]');if(!b)return;e.stopPropagation();
             var a=b.getAttribute('data-action');
             if(a.indexOf('role-')===0){var uname=a.substring(5);var us=getUsers();if(us[uname]){us[uname].role=us[uname].role==='admin'?'orcamento':(us[uname].role==='orcamento'?'viewer':'admin');saveUsers(us);renderUsersList();showNotification('Papel de '+uname+' alterado','success');}}
-            else if(a.indexOf('pw-')===0){var uname2=a.substring(3);var np=prompt('Nova senha para "'+uname2+'":');if(np&&np.trim()){changePw(uname2,np.trim());renderUsersList();showNotification('Senha de '+uname2+' atualizada','success');}}
+            else if(a.indexOf('pw-')===0){var uname2=a.substring(3);var np=prompt('Nova senha para "'+uname2+'":');if(np&&np.trim()){var e2=validatePassword(np.trim(),uname2);if(e2){showNotification(e2,'error');}else{changePw(uname2,np.trim());renderUsersList();showNotification('Senha de '+uname2+' atualizada','success');}}}
             else if(a.indexOf('del-')===0){var uname3=a.substring(4);if(uname3!==currentUser.username&&uname3!=='admin'&&confirm('Remover "'+uname3+'"?')){var us2=getUsers();delete us2[uname3];saveUsers(us2);renderUsersList();showNotification('Usuario removido','success');}}
-            else if(a==='my-pw'){var np2=prompt('Nova senha para "'+currentUser.username+'":');if(np2&&np2.trim()){changePw(currentUser.username,np2.trim());showNotification('Sua senha foi atualizada','success');}}
+            else if(a==='my-pw'){var np2=prompt('Nova senha para "'+currentUser.username+'":');if(np2&&np2.trim()){var e2=validatePassword(np2.trim(),currentUser.username);if(e2){showNotification(e2,'error');}else{changePw(currentUser.username,np2.trim());showNotification('Sua senha foi atualizada','success');}}}
         };
     }
 
@@ -568,7 +598,75 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
         else{document.getElementById('login-screen').style.display='flex';}
     }
 
-    // Login form
+    /* ---- First login password change ---- */
+    function showFirstLogin(username, role){
+        document.getElementById('login-screen').style.display='none';
+        document.getElementById('login-ok').style.display='none';
+        document.getElementById('first-login-screen').style.display='flex';
+        document.getElementById('first-login-error').style.display='none';
+        document.getElementById('new-pw').value='';
+        document.getElementById('confirm-pw').value='';
+        document.getElementById('new-pw').focus();
+        checkRules('', username);
+    }
+
+    /* Real-time password rules feedback */
+    function checkRules(pw, username){
+        var rules = {
+            'rule-length': pw.length >= 6,
+            'rule-upper': /[A-Z]/.test(pw),
+            'rule-number': /[0-9]/.test(pw),
+            'rule-name': !username || pw.toLowerCase().indexOf(username.toLowerCase()) === -1
+        };
+        Object.keys(rules).forEach(function(id){
+            var el = document.getElementById(id);
+            if(el) el.className = rules[id] ? 'pass' : 'fail';
+        });
+    }
+    document.getElementById('new-pw').addEventListener('input', function(){
+        var tempUser = JSON.parse(sessionStorage.getItem(SK));
+        checkRules(this.value, tempUser ? tempUser.username : '');
+    });
+
+    function validatePassword(pw, username){
+        if(pw.length<6) return 'A senha deve ter pelo menos 6 caracteres.';
+        if(!/[A-Z]/.test(pw)) return 'A senha deve conter pelo menos uma letra maiuscula.';
+        if(!/[0-9]/.test(pw)) return 'A senha deve conter pelo menos um numero.';
+        // Check password doesn't contain the username (case-insensitive)
+        if(username && pw.toLowerCase().indexOf(username.toLowerCase())>-1) return 'A senha nao pode conter seu nome de usuario.';
+        return null;
+    }
+
+    document.getElementById('first-login-form').addEventListener('submit',function(e){
+        e.preventDefault();
+        var pw=document.getElementById('new-pw').value;
+        var cpw=document.getElementById('confirm-pw').value;
+        var errEl=document.getElementById('first-login-error');
+        errEl.style.display='none';
+
+        if(!pw||!cpw){errEl.style.display='block';errEl.textContent='Preencha os dois campos.';return;}
+        if(pw!==cpw){errEl.style.display='block';errEl.textContent='As senhas nao coincidem.';return;}
+
+        // Get username from stored session
+        var tempUser=JSON.parse(sessionStorage.getItem(SK));
+
+        var err=validatePassword(pw, tempUser?tempUser.username:'');
+        if(err){errEl.style.display='block';errEl.textContent=err;return;}
+
+        if(!tempUser)return;
+        var users=getUsers();
+        if(!users[tempUser.username]){errEl.style.display='block';errEl.textContent='Erro inesperado. Tente novamente.';return;}
+        users[tempUser.username].password=hashPw(pw);
+        delete users[tempUser.username].isFirstLogin;
+        saveUsers(users);
+
+        currentUser={username:tempUser.username,role:tempUser.role};
+        document.getElementById('first-login-screen').style.display='none';
+        showDashboardUI();
+        showNotification('Conta configurada com sucesso!','success');
+    });
+
+    /* ---- Login form ---- */
     document.getElementById('login-form').addEventListener('submit',function(e){
         e.preventDefault();
         var username=document.getElementById('login-user').value.trim();
@@ -584,11 +682,18 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 
         currentUser={username:username,role:user.role};
         setSession(username,user.role);
-        okEl.style.display='block';
-        setTimeout(function(){showDashboardUI();},300);
+
+        // First login check
+        if(user.isFirstLogin){
+            okEl.style.display='block';
+            setTimeout(function(){showFirstLogin(username,user.role);},300);
+        } else {
+            okEl.style.display='block';
+            setTimeout(function(){showDashboardUI();},300);
+        }
     });
 
-    // New user form
+    /* ---- New user form ---- */
     document.getElementById('new-user-form').addEventListener('submit',function(e){
         e.preventDefault();
         var u=document.getElementById('new-username').value.trim();
@@ -598,9 +703,12 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
         if(u.length<2){showNotification('Nome deve ter pelo menos 2 caracteres','error');return;}
         if(p.length<3){showNotification('Senha deve ter pelo menos 3 caracteres','error');return;}
         var users=getUsers();if(users[u]){showNotification('Usuario ja existe','error');return;}
-        users[u]={password:hashPw(p),role:r,createdAt:new Date().toISOString()};saveUsers(users);renderUsersList();
+        // New users get firstLogin marker
+        users[u]={password:hashPw(p),role:r,createdAt:new Date().toISOString(),isFirstLogin:true};
+        saveUsers(users);renderUsersList();
         document.getElementById('new-username').value='';document.getElementById('new-password').value='';
         showNotification('Usuario "'+u+'" criado como '+roleLabel(r),'success');
+        showNotification('Senha padrao: Mudar@2026 — o usuario deve trocar no primeiro acesso.','success');
     });
 
     // Logout
