@@ -5,8 +5,8 @@ Servidor Flask do dashboard da agencia.
 - DELETE /api/files/<name> → Remove um arquivo
 - GET /api/data  → Dados em JSON (para charts)
 """
-from flask import Flask, request, jsonify, render_template
-import os, json, shutil
+from flask import Flask, request, jsonify, send_from_directory
+import os, json
 from werkzeug.utils import secure_filename
 
 # Adiciona a raiz do projeto ao path
@@ -15,8 +15,11 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from app.gerar_dashboard import load_all_data, compute_kpis, parse_xlsx
 
-app = Flask(__name__, template_folder='templates', static_folder='static')
-app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dados')
+PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.dirname(PROJECT_DIR)
+
+app = Flask(__name__, static_folder=ROOT_DIR, template_folder='templates')
+app.config['UPLOAD_FOLDER'] = os.path.join(PROJECT_DIR, 'dados')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 
 ALLOWED = {'.xlsx', '.xls', '.csv'}
@@ -28,20 +31,8 @@ def allowed(name):
 
 @app.route('/')
 def index():
-    """Dashboard principal com upload integrado."""
-    base = app.config['UPLOAD_FOLDER']
-    if not os.path.isdir(base):
-        os.makedirs(base, exist_ok=True)
-
-    months = load_all_data(base) if os.listdir(base) else {}
-
-    # Build the data JSON for the frontend
-    data_json = json.dumps(months, ensure_ascii=False)
-
-    return render_template('dashboard.html',
-                           DATA=data_json,
-                           files=list(months.keys()),
-                           total_months=len(months))
+    """Serve o index.html estatico com login."""
+    return send_from_directory(ROOT_DIR, 'index.html')
 
 
 @app.route('/upload', methods=['POST'])
