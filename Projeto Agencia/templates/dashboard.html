@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ju Basilio Viagens</title>
+<style>
+:root {
+  --bg: #f5f5f0;
+  --sidebar-bg: #fafaf7;
+  --card-bg: #ffffff;
+  --text: #1e1e1e;
+  --text-muted: #888;
+  --primary: #4f46e5;
+  --border: #e8e8e3;
+  --radius: 14px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  min-height: 100vh;
+  line-height: 1.5;
+}
+.sidebar {
+  width: 220px; min-width: 220px; background: var(--sidebar-bg);
+  border-right: 1px solid var(--border); padding: 32px 0;
+  display: flex; flex-direction: column;
+}
+.logo { padding: 0 24px 28px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+.logo span { font-size: 20px; font-weight: 700; color: var(--primary); letter-spacing: -0.5px; }
+.sidebar-menu { list-style: none; padding: 0 12px; }
+.sidebar-menu li,
+.menu-item-with-delete {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 10px 10px 16px; margin: 2px 0; border-radius: 10px;
+  font-size: 14px; font-weight: 500; color: var(--text-muted);
+  transition: all 0.2s; cursor: pointer;
+}
+.sidebar-menu li:hover,
+.menu-item-with-delete:hover { background: #eef; color: var(--text); }
+.sidebar-menu li.active,
+.menu-item-with-delete.active { background: var(--primary); color: #fff; font-weight: 600; }
+.delete-btn {
+  font-size: 14px; color: #ccc; cursor: pointer; padding: 2px 6px;
+  border-radius: 4px; transition: all 0.15s; line-height: 1;
+}
+.delete-btn:hover { color: #dc2626; background: rgba(220,38,38,0.1); }
+
+.upload-zone {
+  margin: 0 12px 16px; border: 2px dashed var(--border); border-radius: 12px;
+  padding: 18px 12px; text-align: center; cursor: pointer;
+  transition: all 0.2s; position: relative;
+}
+.upload-zone:hover { border-color: var(--primary); background: rgba(79,70,229,0.04); }
+.upload-zone.dragover { border-color: var(--primary); background: rgba(79,70,229,0.08); }
+.upload-zone.uploading { pointer-events: none; opacity: 0.6; }
+.upload-zone.uploading::after {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, transparent, var(--primary), transparent);
+  animation: uploading 1.2s infinite;
+}
+@keyframes uploading { 0%,100% { opacity:0.3; } 50% { opacity:1; } }
+.upload-icon { font-size: 22px; color: var(--primary); }
+.upload-text { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+.sidebar-footer {
+  margin-top: auto; padding: 16px 24px; font-size: 11px;
+  color: var(--text-muted); border-top: 1px solid var(--border);
+}
+
+.main { flex: 1; padding: 36px 40px; max-width: 1300px; overflow-x: auto; }
+.top-bar {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  margin-bottom: 32px; flex-wrap: wrap; gap: 12px;
+}
+.top-bar-left { flex: 1; }
+.top-bar h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
+.top-bar p { color: var(--text-muted); font-size: 14px; margin-top: 4px; }
+.tabs { display: flex; gap: 4px; }
+.tab {
+  padding: 8px 20px; border: 1px solid var(--border); border-radius: 8px;
+  background: transparent; color: var(--text-muted);
+  font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s;
+}
+.tab:hover { border-color: var(--primary); color: var(--text); }
+.tab.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+.view.hidden { display: none; }
+
+.kpi-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 14px; margin-bottom: 28px;
+}
+.kpi-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow);
+}
+.kpi-card .label { font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.kpi-card .value { font-size: 20px; font-weight: 700; margin-top: 6px; }
+
+.charts-row { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 28px; }
+.chart-box {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow);
+}
+.chart-box h3 { font-size: 13px; font-weight: 600; margin-bottom: 16px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.3px; }
+
+.panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow);
+  overflow: hidden; margin-bottom: 28px;
+}
+.panel-header { padding: 20px 24px; border-bottom: 1px solid var(--border); }
+.panel-header h3 { font-size: 14px; font-weight: 600; }
+
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead th {
+  text-align: left; padding: 10px 14px; border-bottom: 2px solid var(--border);
+  color: var(--text-muted); font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;
+}
+thead th.num { text-align: right; }
+tbody td {
+  padding: 11px 14px; border-bottom: 1px solid var(--border);
+  white-space: nowrap; max-width: 280px; overflow: hidden; text-overflow: ellipsis;
+}
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: #f9fafb; font-weight: 700; }
+tbody tr:last-child td { border-bottom: none; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+.badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.badge.PAGO { background: #dcfce7; color: #15803d; }
+.badge.PENDENTE { background: #fef3c7; color: #a16207; }
+.badge.VAZIO { background: #f3f4f6; color: #9ca3af; }
+
+.seller-grid { display: grid; gap: 10px; padding: 16px 24px; }
+.seller-card {
+  background: #fafafa; border-radius: 10px; padding: 14px 18px;
+  display: flex; align-items: center; gap: 14px;
+}
+.seller-card .avatar {
+  width: 38px; height: 38px; border-radius: 50%; background: var(--primary);
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; flex-shrink: 0;
+}
+.seller-card .info { flex: 1; min-width: 0; }
+.seller-card .info .name { font-weight: 600; font-size: 14px; }
+.seller-card .info .meta { font-size: 12px; color: var(--text-muted); }
+.seller-values { text-align: right; flex-shrink: 0; }
+.seller-values .sv-total { font-size: 15px; font-weight: 700; }
+.seller-values .sv-liq, .seller-values .sv-com { font-size: 11px; color: var(--text-muted); }
+
+.summary-list { list-style: none; }
+.summary-list li {
+  padding: 8px 0; font-size: 13px; color: var(--text-muted);
+  border-bottom: 1px dashed var(--border);
+  font-family: 'Consolas', 'Courier New', monospace;
+}
+.summary-list li:last-child { border-bottom: none; }
+
+.footer { text-align: center; padding: 24px 0 36px; font-size: 11px; color: var(--text-muted); }
+
+.notification {
+  position: fixed; top: 20px; right: 20px; padding: 14px 24px; border-radius: 10px;
+  font-size: 13px; font-weight: 500; z-index: 1000;
+  animation: slideIn 0.3s ease; max-width: 360px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+.notification.success { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+.notification.error { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
+.notification.fade-out { opacity: 0; transition: opacity 0.5s; }
+@keyframes slideIn { from { transform: translateX(100%); opacity:0; } to { transform: translateX(0); opacity:1; } }
+
+@media (max-width: 900px) {
+  body { flex-direction: column; }
+  .sidebar { width: 100%; min-width: unset; flex-direction: row; padding: 12px; gap: 8px; overflow-x: auto; }
+  .sidebar .logo { border-bottom: none; padding: 0 8px; }
+  .sidebar-menu { display: flex; padding: 0; gap: 4px; }
+  .upload-zone { margin: 0 4px 8px; padding: 12px 8px; min-width: 120px; }
+  .upload-icon, .upload-text, .delete-btn, .sidebar-footer { display: none; }
+  .main { padding: 20px 16px; }
+  .charts-row { grid-template-columns: 1fr; }
+  .top-bar { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+
+<nav class="sidebar">
+    <div class="logo"><span>&#9670; Ju Basilio Viagens</span></div>
+
+    <!-- Upload area -->
+    <div class="upload-zone" id="upload-zone">
+        <input type="file" id="file-input" accept=".xlsx,.xls,.csv" hidden>
+        <div class="upload-icon">&#8593;</div>
+        <div class="upload-text">Enviar .xlsx / .csv</div>
+    </div>
+
+    <!-- Month list -->
+    <ul class="sidebar-menu" id="sidebar-menu"></ul>
+
+    <div class="sidebar-footer">
+        <span id="month-count"></span>
+    </div>
+</nav>
+
+<main class="main">
+    <div class="top-bar">
+        <div class="top-bar-left">
+            <h1 id="month-title">-</h1>
+            <p id="month-subtitle">-</p>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs" id="view-tabs">
+            <button class="tab active" data-tab="mensal" onclick="switchTab('mensal')">Mensal</button>
+            <button class="tab" data-tab="anual" onclick="switchTab('anual')">Anual</button>
+        </div>
+    </div>
+
+    <!-- ===== MENSAL VIEW ===== -->
+    <div id="view-mensal" class="view">
+        <div class="kpi-grid" id="kpi-grid"></div>
+        <div class="charts-row">
+            <div class="chart-box"><h3>Faturamento por Vendedor</h3><canvas id="chart-bar"></canvas></div>
+            <div class="chart-box"><h3>Por Produto</h3><canvas id="chart-donut"></canvas></div>
+        </div>
+        <div id="seller-panels"></div>
+        <div class="panel">
+            <div class="panel-header"><h3>Transacoes Detalhadas</h3></div>
+            <div class="table-wrap">
+                <table><thead><tr>
+                    <th>ID</th><th>Nome</th><th>Produto</th>
+                    <th>Status</th><th class="num">Total</th>
+                    <th class="num">Taxa</th><th class="num">Liquido</th>
+                    <th class="num">Comissao</th><th>Obs</th>
+                </tr></thead><tbody id="tx-body"></tbody></table>
+            </div>
+        </div>
+        <div class="panel">
+            <div class="panel-header"><h3>Notas / Comissoes / Resumo</h3></div>
+            <div style="padding:16px 24px">
+                <ul class="summary-list" id="summary-list"></ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== ANUAL VIEW ===== -->
+    <div id="view-anual" class="view hidden">
+        <div class="kpi-grid" id="kpi-anual-grid"></div>
+        <div class="panel">
+            <div class="panel-header"><h3>Evolucao Mensal — Faturamento</h3></div>
+            <div style="padding:20px">
+                <canvas id="chart-line" height="100"></canvas>
+            </div>
+        </div>
+        <div class="charts-row">
+            <div class="chart-box"><h3>Vendas por Mes</h3><canvas id="chart-sales-bar"></canvas></div>
+            <div class="chart-box"><h3>Vendedores por Mes</h3><canvas id="chart-sellers-stacked"></canvas></div>
+        </div>
+        <div class="panel">
+            <div class="panel-header"><h3>Resumo Anual por Mes</h3></div>
+            <div class="table-wrap">
+                <table><thead><tr>
+                    <th>Mes</th><th class="num">Faturamento</th><th class="num">Taxas</th>
+                    <th class="num">Liquido</th><th class="num">Comissoes</th>
+                    <th class="num">Pagos</th><th class="num">Pendentes</th>
+                </tr></thead><tbody id="anual-tbody"></tbody></table>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer" id="footer"></div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Data from Flask or static build
+const DATA = {{DATA|safe}};
+</script>
+<script src="/static/script.js"></script>
+</body>
+</html>
