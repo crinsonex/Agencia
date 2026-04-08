@@ -76,9 +76,9 @@ with app.app_context():
         )
         db.session.add(admin)
         db.session.commit()
-        print('✅ Usuário admin criado (usuário: admin, senha: admin)')
+        print('[OK] Usuário admin criado (usuário: admin, senha: admin)')
     else:
-        print('✅ Banco de usuários carregado')
+        print('[OK] Banco de usuários carregado')
 
 ALLOWED = {'.xlsx', '.xls', '.csv'}
 
@@ -102,9 +102,9 @@ def init_db():
             )
             db.session.add(admin)
             db.session.commit()
-            print('Usuário admin criado (senha: admin)')
+            print('[OK] Usuário admin criado (senha: admin)')
         else:
-            print('Usuário admin já existe')
+            print('[OK] Usuário admin já existe')
 
 
 def get_current_user():
