@@ -267,66 +267,77 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
     /* ---- Default password for new users ---- */
     var DEFAULT_PW = 'Mudar@2026';
 
-    /* ---- Storage ---- */
-    var UK='ju_basilio_users',SK='ju_basilio_session',DK='ju_basilio_data';
-    function getUsers(){try{return JSON.parse(localStorage.getItem(UK))||{};}catch(e){return {};}}
-    function saveUsers(u){
-        try{
-            console.log('saveUsers chamado. Usuarios:', Object.keys(u), 'Tamanho:', JSON.stringify(u).length);
-            var str=JSON.stringify(u);
-            localStorage.setItem(UK,str);
-            console.log('Usuarios salvos com sucesso');
-            return true;
-        }catch(e){
-            console.error('Erro ao salvar usuarios:',e);
-            console.error('Dados que falharam:', u);
-            showNotification('Erro ao salvar usuarios: '+getErrorMessage(e),'error');
-            return false;
-        }
+    /* ---- API Helpers ---- */
+    var API_BASE = '';
+    async function apiLogin(username, password){
+        var resp = await fetch(API_BASE + '/api/login', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({username: username, password: password})
+        });
+        return await resp.json();
     }
-    function getSession(){try{return JSON.parse(sessionStorage.getItem(SK));}catch(e){return null;}}
-    function setSession(u,r){sessionStorage.setItem(SK,JSON.stringify({username:u,role:r}));}
-    function clearSession(){sessionStorage.removeItem(SK);}
-    function loadData(){try{var r=localStorage.getItem(DK);if(r)return JSON.parse(r);}catch(e){}return {};}
-    function saveData(d){
-        try{
-            console.log('saveData chamado. Meses:', Object.keys(d), 'Tamanho:', JSON.stringify(d).length);
-            var str=JSON.stringify(d);
-            localStorage.setItem(DK,str);
-            console.log('Dados salvos com sucesso. Verificando:', localStorage.getItem(DK));
-            return true;
-        }catch(e){
-            console.error('Erro ao salvar dados:',e);
-            console.error('Dados que falharam:', d);
-            showNotification('Erro ao salvar dados: '+getErrorMessage(e),'error');
-            return false;
-        }
+    async function apiLogout(){
+        var resp = await fetch(API_BASE + '/api/logout', {method: 'POST'});
+        return await resp.json();
     }
-    function getErrorMessage(e){
-        if(e.name==='QuotaExceededError'||e.code===22||e.message.indexOf('quota')>=0){
-            return 'Espaco insuficiente. Limpe dados antigos ou use outro navegador.';
-        }
-        if(e.name==='SyntaxError'||e.code===5){
-            return 'Erro de formato dos dados.';
-        }
-        return e.message||'Erro desconhecido';
+    async function apiGetMe(){
+        var resp = await fetch(API_BASE + '/api/me', {credentials: 'same-origin'});
+        return await resp.json();
+    }
+    async function apiListUsers(){
+        var resp = await fetch(API_BASE + '/api/users', {credentials: 'same-origin'});
+        return await resp.json();
+    }
+    async function apiCreateUser(u,p,r){
+        var resp = await fetch(API_BASE + '/api/users', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({username: u, password: p, role: r})
+        });
+        return await resp.json();
+    }
+    async function apiChangeUserRole(u, newRole){
+        var resp = await fetch(API_BASE + '/api/users/' + encodeURIComponent(u) + '/role', {
+            method: 'PUT',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({role: newRole})
+        });
+        return await resp.json();
+    }
+    async function apiChangeUserPassword(u, newPw){
+        var resp = await fetch(API_BASE + '/api/users/' + encodeURIComponent(u) + '/password', {
+            method: 'PUT',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({password: newPw})
+        });
+        return await resp.json();
+    }
+    async function apiDeleteUser(u){
+        var resp = await fetch(API_BASE + '/api/users/' + encodeURIComponent(u), {
+            method: 'DELETE'
+        });
+        return await resp.json();
+    }
+    async function apiFirstLoginChangePassword(u, pw, cpw){
+        var resp = await fetch(API_BASE + '/api/users/' + encodeURIComponent(u) + '/first-login', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({password: pw, confirm_password: cpw})
+        });
+        return await resp.json();
     }
 
-    /* ---- Init users ---- */
-    function initUsers(){
-        var users=getUsers();
-        if(!users.admin){
-            users.admin={password:hashPw('admin'),role:'admin',createdAt:new Date().toISOString()};
-            if(!saveUsers(users)){
-                console.warn('Falha ao criar usuario admin padrao');
-            }
-        }
-    }
+    /* ---- Local storage for data only ---- */
+    var DK='ju_basilio_data';
+    function loadData(){try{var r=localStorage.getItem(DK);if(r)return JSON.parse(r);}catch(e){}return {};}
+    function saveData(d){try{localStorage.setItem(DK,JSON.stringify(d));return true;}catch(e){console.error(e);return false;}}
 
     /* ---- State ---- */
     var DATA={};
     var currentMonth=null;
     var currentUser=null;
+    var isLoading=true; // flag para debounce de loading
     var COLORS=['#4f46e5','#06b6d4','#f59e0b','#10b981','#f97316','#ec4899','#6366f1','#14b8a6'];
     var charts={bar:null,donut:null,line:null,salesBar:null,sellersStacked:null};
     var MONTH_NAMES={
@@ -363,19 +374,22 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
     }
 
     /* ---- Login / Logout ---- */
-    function showDashboardUI(){
+    async function showDashboardUI(){
         document.getElementById('login-screen').style.display='none';
         document.getElementById('dashboard-layout').classList.add('visible');
-        document.getElementById('user-avatar').textContent=currentUser.username.charAt(0).toUpperCase();
-        document.getElementById('user-display-name').textContent=currentUser.username;
-        var rl=document.getElementById('user-role-label');
-        rl.textContent=roleLabel(currentUser.role);
-        document.getElementById('upload-zone').style.display=canUpload()?'':'none';
-        document.getElementById('settings-link').style.display=isAdmin()?'':'none';
-        buildDashboard();
+        if(currentUser){
+            document.getElementById('user-avatar').textContent=currentUser.username.charAt(0).toUpperCase();
+            document.getElementById('user-display-name').textContent=currentUser.username;
+            var rl=document.getElementById('user-role-label');
+            rl.textContent=roleLabel(currentUser.role);
+            document.getElementById('upload-zone').style.display=canUpload()?'':'none';
+            document.getElementById('settings-link').style.display=isAdmin()?'':'none';
+            buildDashboard();
+        }
     }
-    function doLogout(){
-        clearSession();currentUser=null;
+    async function doLogout(){
+        await apiLogout();
+        currentUser=null;
         document.getElementById('dashboard-layout').classList.remove('visible');
         document.getElementById('login-screen').style.display='flex';
         document.getElementById('login-user').value='';
@@ -423,7 +437,7 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
             var ext=file.name.split('.').pop().toLowerCase();
             var label=file.name.replace(/\.[^.]+$/,'').toUpperCase();
             var display=MONTH_NAMES[label]||label;
-            function finish(tx,su){resolve({meta:{display:display,file:file.name},kpi:computeKpis(tx,display),transactions:tx,summary:su,uploadedBy:currentUser.username});}
+            function finish(tx,su){resolve({meta:{display:display,file:file.name},kpi:computeKpis(tx,display),transactions:tx,summary:su});}
             if(ext==='csv'){var r=new FileReader();r.onload=function(e){try{var wb=XLSX.read(e.target.result,{type:'string'});var ws=wb.Sheets[wb.SheetNames[0]];var rows=XLSX.utils.sheet_to_json(ws,{header:1});if(rows.length>1&&rows[0]&&rows[0].length>1){var p=parseXlsxRows(ws);finish(p.transactions,p.summary);return;}}catch(ex){}finish([],[]);};r.readAsText(file,'utf-8');}
             else{var r2=new FileReader();r2.onload=function(e){var d=new Uint8Array(e.target.result);var wb=XLSX.read(d,{type:'array'});var ws=wb.Sheets[wb.SheetNames[0]];var p=parseXlsxRows(ws);finish(p.transactions,p.summary);};r2.readAsArrayBuffer(file);}
         });
@@ -555,38 +569,71 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
         input.addEventListener('change',function(){if(input.files.length)doUpload(input.files[0]);});
     }
 
-    function doUpload(file){
+    async function doUpload(file){
         var zone=document.getElementById('upload-zone');
         zone.classList.add('uploading');
-        processFile(file).then(function(d){
+        try{
+            var form = new FormData();
+            form.append('file', file);
+            var resp = await fetch(API_BASE + '/upload', {
+                method: 'POST',
+                body: form,
+                credentials: 'same-origin'
+            });
+            var result = await resp.json();
             zone.classList.remove('uploading');
-            var label=file.name.replace(/\.[^.]+$/,'').toUpperCase();
-            DATA[label]=d;
+            if(!resp.ok || result.error){
+                showNotification(result.error || 'Erro ao fazer upload','error');
+                return;
+            }
+            // O retorno já contém 'data' com meta, kpi, transactions, summary
+            // meta já inclui uploadedBy do servidor
+            var label = result.month;
+            DATA[label] = result.data;
             if(!saveData(DATA)){
-                showNotification('Erro ao salvar dados. Espaco insuficiente?','error');
+                showNotification('Erro ao salvar dados localmente. Tente novamente.','error');
                 return;
             }
             buildSidebar();
             selectMonth(label);
-            showNotification(d.meta.display+' importado — '+d.transactions.length+' transacoes','success');
-        }).catch(function(){zone.classList.remove('uploading');showNotification('Erro ao processar arquivo','error');});
+            showNotification(result.message,'success');
+        }catch(e){
+            zone.classList.remove('uploading');
+            console.error('Upload error:',e);
+            showNotification('Erro ao fazer upload','error');
+        }
     }
 
-    function deleteMonth(key){
+    async function deleteMonth(key){
         var entry=DATA[key];
         if(!entry)return;
         var label=entry.meta.display;
         if(!canDelete(entry)){showNotification('Voce nao pode remover este arquivo','error');return;}
         if(!confirm('Remover '+label+'?'))return;
-        delete DATA[key];
-        if(!saveData(DATA)){
-            showNotification('Erro ao remover arquivo. Tente novamente.','error');
-            return;
+        try{
+            var filename = entry.meta.file;
+            var resp = await fetch(API_BASE + '/api/files/' + encodeURIComponent(filename), {
+                method: 'DELETE',
+                credentials: 'same-origin'
+            });
+            var result = await resp.json();
+            if(!resp.ok || result.error){
+                showNotification(result.error || 'Erro ao remover arquivo','error');
+                return;
+            }
+            delete DATA[key];
+            if(!saveData(DATA)){
+                showNotification('Erro ao atualizar dados local.','error');
+                return;
+            }
+            buildSidebar();
+            var f=Object.keys(DATA)[0];
+            if(f)selectMonth(f);else{document.getElementById('month-title').textContent='Sem dados';document.getElementById('month-subtitle').textContent='Envie um arquivo .xlsx para comecar o dashboard';}
+            showNotification('Arquivo removido','success');
+        }catch(e){
+            console.error('Delete error:',e);
+            showNotification('Erro ao remover arquivo','error');
         }
-        buildSidebar();
-        var f=Object.keys(DATA)[0];
-        if(f)selectMonth(f);else{document.getElementById('month-title').textContent='Sem dados';document.getElementById('month-subtitle').textContent='Envie um arquivo .xlsx para comecar o dashboard';}
-        showNotification('Arquivo removido','success');
     }
 
     /* ---- Build dashboard ---- */
@@ -605,37 +652,70 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
     /* ---- Users Modal ---- */
     window.openUsersModal=function(){renderUsersList();document.getElementById('users-modal').classList.remove('hidden');};
     function closeUsersModal(){document.getElementById('users-modal').classList.add('hidden');}
-    function renderUsersList(){
+    async function renderUsersList(){
         var list=document.getElementById('users-list');
-        var users=getUsers();var keys=Object.keys(users);
-        if(!keys.length){list.innerHTML='<p style="color:var(--text-muted);font-size:13px">Nenhum usuario.</p>';return;}
+        var resp = await apiListUsers();
+        var usersData = resp.users || [];
+        if(!usersData.length){list.innerHTML='<p style="color:var(--text-muted);font-size:13px">Nenhum usuario.</p>';return;}
         list.innerHTML='';
-        keys.forEach(function(name){var u=users[name];var isYou=name===currentUser.username;
+        usersData.forEach(function(u){
+            var name = u.username;
+            var isYou = name === (currentUser ? currentUser.username : '');
             var div=document.createElement('div');div.className='user-list-item';
             div.innerHTML='<div><span class="user-list-name">'+name+(isYou?' (voce)':'')+'</span> <span class="role-badge" style="background:'+roleColor(u.role)+'">'+roleLabel(u.role)+'</span></div><div class="user-list-actions"><button title="Trocar papel" data-action="role-'+name+'">&#8635;</button>'+(name!==currentUser.username?'<button title="Resetar senha" data-action="pw-'+name+'">&#128272;</button><button title="Remover" data-action="del-'+name+'">&#10005;</button>':'<button title="Trocar minha senha" data-action="my-pw">&#128272;</button>')+'</div>';
-            list.appendChild(div);});
-        list.onclick=function(e){var b=e.target.closest('[data-action]');if(!b)return;e.stopPropagation();
+            list.appendChild(div);
+        });
+        list.onclick=async function(e){
+            var b=e.target.closest('[data-action]');if(!b)return;e.stopPropagation();
             var a=b.getAttribute('data-action');
-            if(a.indexOf('role-')===0){var uname=a.substring(5);var us=getUsers();if(us[uname]){us[uname].role=us[uname].role==='admin'?'orcamento':(us[uname].role==='orcamento'?'viewer':'admin');if(saveUsers(us)){renderUsersList();showNotification('Papel de '+uname+' alterado','success');}else{showNotification('Erro ao alterar papel de '+uname+'.','error');}}}
-            else if(a.indexOf('pw-')===0){var uname2=a.substring(3);var np=prompt('Nova senha para "'+uname2+'":');if(np&&np.trim()){var e2=validatePassword(np.trim(),uname2);if(e2){showNotification(e2,'error');}else{if(changePw(uname2,np.trim())){renderUsersList();showNotification('Senha de '+uname2+' atualizada','success');}}}}
-            else if(a.indexOf('del-')===0){var uname3=a.substring(4);if(uname3!==currentUser.username&&uname3!=='admin'&&confirm('Remover "'+uname3+'"?')){var us2=getUsers();delete us2[uname3];if(saveUsers(us2)){renderUsersList();showNotification('Usuario removido','success');}else{showNotification('Erro ao remover usuario.','error');}}}
-            else if(a==='my-pw'){var np2=prompt('Nova senha para "'+currentUser.username+'":');if(np2&&np2.trim()){var e2=validatePassword(np2.trim(),currentUser.username);if(e2){showNotification(e2,'error');}else{if(changePw(currentUser.username,np2.trim())){showNotification('Sua senha foi atualizada','success');}}}}
+            if(a.indexOf('role-')===0){
+                var uname=a.substring(5);
+                var usResp = await apiListUsers();
+                var us = usResp.users;
+                var user = us.find(u => u.username === uname);
+                if(user){
+                    var newRole = user.role==='admin'?'orcamento':(user.role==='orcamento'?'viewer':'admin');
+                    var resp = await apiChangeUserRole(uname, newRole);
+                    if(resp.ok){renderUsersList();showNotification('Papel de '+uname+' alterado','success');}else{showNotification(resp.error||'Erro ao alterar papel de '+uname+'.','error');}
+                }
+            }
+            else if(a.indexOf('pw-')===0){
+                var uname2=a.substring(3);
+                var np=prompt('Nova senha para "'+uname2+'":');
+                if(np&&np.trim()){
+                    var e2=validatePassword(np.trim(),uname2);
+                    if(e2){showNotification(e2,'error');}
+                    else{
+                        var resp = await apiChangeUserPassword(uname2, np.trim());
+                        if(resp.ok){renderUsersList();showNotification('Senha de '+uname2+' atualizada','success');}
+                        else{showNotification(resp.error||'Erro ao alterar senha.','error');}
+                    }
+                }
+            }
+            else if(a.indexOf('del-')===0){
+                var uname3=a.substring(4);
+                if(uname3!==currentUser.username&&uname3!=='admin'&&confirm('Remover "'+uname3+'"?')){
+                    var resp = await apiDeleteUser(uname3);
+                    if(resp.ok){renderUsersList();showNotification('Usuario removido','success');}
+                    else{showNotification(resp.error||'Erro ao remover usuario.','error');}
+                }
+            }
+            else if(a==='my-pw'){
+                var np2=prompt('Nova senha para "'+currentUser.username+'":');
+                if(np2&&np2.trim()){
+                    var e2=validatePassword(np2.trim(),currentUser.username);
+                    if(e2){showNotification(e2,'error');}
+                    else{
+                        var resp = await apiChangeUserPassword(currentUser.username, np2.trim());
+                        if(resp.ok){showNotification('Sua senha foi atualizada','success');}
+                        else{showNotification(resp.error||'Erro ao alterar senha.','error');}
+                    }
+                }
+            }
         };
     }
 
     document.getElementById('close-modal-btn').addEventListener('click',function(){closeUsersModal();});
-    function changePw(u,p){
-        var us=getUsers();
-        if(us[u]){
-            us[u].password=hashPw(p);
-            var saved=saveUsers(us);
-            if(!saved){
-                showNotification('Erro ao alterar senha de '+u,'error');
-            }
-            return saved;
-        }
-        return false;
-    }
 
     /* ---- Notifications ---- */
     function showNotification(msg,type){
@@ -647,11 +727,21 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
     /* =============================================
        INIT
     ============================================= */
-    function init(){
-        initUsers();
-        currentUser=getSession();
-        if(currentUser){showDashboardUI();}
-        else{document.getElementById('login-screen').style.display='flex';}
+    async function init(){
+        // Verificar se há sessão ativa no servidor
+        try{
+            var meResp = await apiGetMe();
+            if(meResp.user){
+                currentUser = meResp.user;
+                showDashboardUI();
+            } else {
+                document.getElementById('login-screen').style.display='flex';
+            }
+        }catch(e){
+            console.log('Sessao nao encontrada ou erro:',e);
+            document.getElementById('login-screen').style.display='flex';
+        }
+        isLoading=false;
     }
 
     /* ---- First login password change ---- */
@@ -680,8 +770,7 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
         });
     }
     document.getElementById('new-pw').addEventListener('input', function(){
-        var tempUser = JSON.parse(sessionStorage.getItem(SK));
-        checkRules(this.value, tempUser ? tempUser.username : '');
+        checkRules(this.value, currentUser ? currentUser.username : '');
     });
 
     function validatePassword(pw, username){
@@ -693,7 +782,7 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
         return null;
     }
 
-    document.getElementById('first-login-form').addEventListener('submit',function(e){
+    document.getElementById('first-login-form').addEventListener('submit',async function(e){
         e.preventDefault();
         var pw=document.getElementById('new-pw').value;
         var cpw=document.getElementById('confirm-pw').value;
@@ -703,31 +792,25 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
         if(!pw||!cpw){errEl.style.display='block';errEl.textContent='Preencha os dois campos.';return;}
         if(pw!==cpw){errEl.style.display='block';errEl.textContent='As senhas nao coincidem.';return;}
 
-        // Get username from stored session
-        var tempUser=JSON.parse(sessionStorage.getItem(SK));
+        if(!currentUser){errEl.style.display='block';errEl.textContent='Sessao expirada. Faca login novamente.';return;}
 
-        var err=validatePassword(pw, tempUser?tempUser.username:'');
+        var err=validatePassword(pw, currentUser.username);
         if(err){errEl.style.display='block';errEl.textContent=err;return;}
 
-        if(!tempUser)return;
-        var users=getUsers();
-        if(!users[tempUser.username]){errEl.style.display='block';errEl.textContent='Erro inesperado. Tente novamente.';return;}
-        users[tempUser.username].password=hashPw(pw);
-        delete users[tempUser.username].isFirstLogin;
-        if(!saveUsers(users)){
-            errEl.style.display='block';
-            errEl.textContent='Erro ao salvar a senha. Verifique espaco de armazenamento.';
+        var resp = await apiFirstLoginChangePassword(currentUser.username, pw, cpw);
+        if(resp.error){
+            errEl.style.display='block';errEl.textContent=resp.error;
             return;
         }
 
-        currentUser={username:tempUser.username,role:tempUser.role};
+        currentUser = resp.user;
         document.getElementById('first-login-screen').style.display='none';
         showDashboardUI();
         showNotification('Conta configurada com sucesso!','success');
     });
 
     /* ---- Login form ---- */
-    document.getElementById('login-form').addEventListener('submit',function(e){
+    document.getElementById('login-form').addEventListener('submit',async function(e){
         e.preventDefault();
         var username=document.getElementById('login-user').value.trim();
         var password=document.getElementById('login-pass').value;
@@ -735,26 +818,30 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
         var okEl=document.getElementById('login-ok');
         errEl.style.display='none';okEl.style.display='none';
 
-        if(!username||!password){errEl.style.display='block';errEl.textContent='Preencha todos os campos.';return;}
-        var users=getUsers();var user=users[username];
-        if(!user){errEl.style.display='block';errEl.textContent='Usuario nao encontrado.';return;}
-        if(hashPw(password)!==user.password){errEl.style.display='block';errEl.textContent='Senha incorreta.';return;}
+        if(!username||!password){
+            errEl.style.display='block';errEl.textContent='Preencha todos os campos.';
+            return;
+        }
 
-        currentUser={username:username,role:user.role};
-        setSession(username,user.role);
+        var resp = await apiLogin(username, password);
+        if(resp.error){
+            errEl.style.display='block';errEl.textContent=resp.error;
+            return;
+        }
+
+        currentUser = resp.user;
+        okEl.style.display='block';
 
         // First login check
-        if(user.isFirstLogin){
-            okEl.style.display='block';
-            setTimeout(function(){showFirstLogin(username,user.role);},300);
+        if(resp.user.is_first_login || resp.user.isFirstLogin){
+            setTimeout(function(){showFirstLogin(username, resp.user.role);},300);
         } else {
-            okEl.style.display='block';
             setTimeout(function(){showDashboardUI();},300);
         }
     });
 
     /* ---- New user form ---- */
-    document.getElementById('new-user-form').addEventListener('submit',function(e){
+    document.getElementById('new-user-form').addEventListener('submit',async function(e){
         e.preventDefault();
         var u=document.getElementById('new-username').value.trim();
         var p=document.getElementById('new-password').value;
@@ -762,13 +849,13 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
         if(!u||!p){showNotification('Preencha todos os campos','error');return;}
         if(u.length<2){showNotification('Nome deve ter pelo menos 2 caracteres','error');return;}
         if(p.length<3){showNotification('Senha deve ter pelo menos 3 caracteres','error');return;}
-        var users=getUsers();if(users[u]){showNotification('Usuario ja existe','error');return;}
-        // New users get firstLogin marker
-        users[u]={password:hashPw(p),role:r,createdAt:new Date().toISOString(),isFirstLogin:true};
-        if(!saveUsers(users)){
-            showNotification('Erro ao criar usuario. Tente novamente.','error');
+
+        var resp = await apiCreateUser(u, p, r);
+        if(resp.error){
+            showNotification(resp.error,'error');
             return;
         }
+
         renderUsersList();
         document.getElementById('new-username').value='';document.getElementById('new-password').value='';
         showNotification('Usuario "'+u+'" criado como '+roleLabel(r),'success');
