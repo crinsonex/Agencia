@@ -270,19 +270,56 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
     /* ---- Storage ---- */
     var UK='ju_basilio_users',SK='ju_basilio_session',DK='ju_basilio_data';
     function getUsers(){try{return JSON.parse(localStorage.getItem(UK))||{};}catch(e){return {};}}
-    function saveUsers(u){localStorage.setItem(UK,JSON.stringify(u));}
+    function saveUsers(u){
+        try{
+            console.log('saveUsers chamado. Usuarios:', Object.keys(u), 'Tamanho:', JSON.stringify(u).length);
+            var str=JSON.stringify(u);
+            localStorage.setItem(UK,str);
+            console.log('Usuarios salvos com sucesso');
+            return true;
+        }catch(e){
+            console.error('Erro ao salvar usuarios:',e);
+            console.error('Dados que falharam:', u);
+            showNotification('Erro ao salvar usuarios: '+getErrorMessage(e),'error');
+            return false;
+        }
+    }
     function getSession(){try{return JSON.parse(sessionStorage.getItem(SK));}catch(e){return null;}}
     function setSession(u,r){sessionStorage.setItem(SK,JSON.stringify({username:u,role:r}));}
     function clearSession(){sessionStorage.removeItem(SK);}
     function loadData(){try{var r=localStorage.getItem(DK);if(r)return JSON.parse(r);}catch(e){}return {};}
-    function saveData(d){try{localStorage.setItem(DK,JSON.stringify(d));}catch(e){}}
+    function saveData(d){
+        try{
+            console.log('saveData chamado. Meses:', Object.keys(d), 'Tamanho:', JSON.stringify(d).length);
+            var str=JSON.stringify(d);
+            localStorage.setItem(DK,str);
+            console.log('Dados salvos com sucesso. Verificando:', localStorage.getItem(DK));
+            return true;
+        }catch(e){
+            console.error('Erro ao salvar dados:',e);
+            console.error('Dados que falharam:', d);
+            showNotification('Erro ao salvar dados: '+getErrorMessage(e),'error');
+            return false;
+        }
+    }
+    function getErrorMessage(e){
+        if(e.name==='QuotaExceededError'||e.code===22||e.message.indexOf('quota')>=0){
+            return 'Espaco insuficiente. Limpe dados antigos ou use outro navegador.';
+        }
+        if(e.name==='SyntaxError'||e.code===5){
+            return 'Erro de formato dos dados.';
+        }
+        return e.message||'Erro desconhecido';
+    }
 
     /* ---- Init users ---- */
     function initUsers(){
         var users=getUsers();
         if(!users.admin){
             users.admin={password:hashPw('admin'),role:'admin',createdAt:new Date().toISOString()};
-            saveUsers(users);
+            if(!saveUsers(users)){
+                console.warn('Falha ao criar usuario admin padrao');
+            }
         }
     }
 
@@ -525,7 +562,10 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
             zone.classList.remove('uploading');
             var label=file.name.replace(/\.[^.]+$/,'').toUpperCase();
             DATA[label]=d;
-            saveData(DATA);
+            if(!saveData(DATA)){
+                showNotification('Erro ao salvar dados. Espaco insuficiente?','error');
+                return;
+            }
             buildSidebar();
             selectMonth(label);
             showNotification(d.meta.display+' importado — '+d.transactions.length+' transacoes','success');
@@ -538,9 +578,14 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
         var label=entry.meta.display;
         if(!canDelete(entry)){showNotification('Voce nao pode remover este arquivo','error');return;}
         if(!confirm('Remover '+label+'?'))return;
-        delete DATA[key];saveData(DATA);buildSidebar();
+        delete DATA[key];
+        if(!saveData(DATA)){
+            showNotification('Erro ao remover arquivo. Tente novamente.','error');
+            return;
+        }
+        buildSidebar();
         var f=Object.keys(DATA)[0];
-        if(f)selectMonth(f);else{document.getElementById('month-title').textContent='Sem dados';document.getElementById('month-subtitle').textContent='Envie um arquivo .xlsx';}
+        if(f)selectMonth(f);else{document.getElementById('month-title').textContent='Sem dados';document.getElementById('month-subtitle').textContent='Envie um arquivo .xlsx para comecar o dashboard';}
         showNotification('Arquivo removido','success');
     }
 
@@ -571,15 +616,26 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
             list.appendChild(div);});
         list.onclick=function(e){var b=e.target.closest('[data-action]');if(!b)return;e.stopPropagation();
             var a=b.getAttribute('data-action');
-            if(a.indexOf('role-')===0){var uname=a.substring(5);var us=getUsers();if(us[uname]){us[uname].role=us[uname].role==='admin'?'orcamento':(us[uname].role==='orcamento'?'viewer':'admin');saveUsers(us);renderUsersList();showNotification('Papel de '+uname+' alterado','success');}}
-            else if(a.indexOf('pw-')===0){var uname2=a.substring(3);var np=prompt('Nova senha para "'+uname2+'":');if(np&&np.trim()){var e2=validatePassword(np.trim(),uname2);if(e2){showNotification(e2,'error');}else{changePw(uname2,np.trim());renderUsersList();showNotification('Senha de '+uname2+' atualizada','success');}}}
-            else if(a.indexOf('del-')===0){var uname3=a.substring(4);if(uname3!==currentUser.username&&uname3!=='admin'&&confirm('Remover "'+uname3+'"?')){var us2=getUsers();delete us2[uname3];saveUsers(us2);renderUsersList();showNotification('Usuario removido','success');}}
-            else if(a==='my-pw'){var np2=prompt('Nova senha para "'+currentUser.username+'":');if(np2&&np2.trim()){var e2=validatePassword(np2.trim(),currentUser.username);if(e2){showNotification(e2,'error');}else{changePw(currentUser.username,np2.trim());showNotification('Sua senha foi atualizada','success');}}}
+            if(a.indexOf('role-')===0){var uname=a.substring(5);var us=getUsers();if(us[uname]){us[uname].role=us[uname].role==='admin'?'orcamento':(us[uname].role==='orcamento'?'viewer':'admin');if(saveUsers(us)){renderUsersList();showNotification('Papel de '+uname+' alterado','success');}else{showNotification('Erro ao alterar papel de '+uname+'.','error');}}}
+            else if(a.indexOf('pw-')===0){var uname2=a.substring(3);var np=prompt('Nova senha para "'+uname2+'":');if(np&&np.trim()){var e2=validatePassword(np.trim(),uname2);if(e2){showNotification(e2,'error');}else{if(changePw(uname2,np.trim())){renderUsersList();showNotification('Senha de '+uname2+' atualizada','success');}}}}
+            else if(a.indexOf('del-')===0){var uname3=a.substring(4);if(uname3!==currentUser.username&&uname3!=='admin'&&confirm('Remover "'+uname3+'"?')){var us2=getUsers();delete us2[uname3];if(saveUsers(us2)){renderUsersList();showNotification('Usuario removido','success');}else{showNotification('Erro ao remover usuario.','error');}}}
+            else if(a==='my-pw'){var np2=prompt('Nova senha para "'+currentUser.username+'":');if(np2&&np2.trim()){var e2=validatePassword(np2.trim(),currentUser.username);if(e2){showNotification(e2,'error');}else{if(changePw(currentUser.username,np2.trim())){showNotification('Sua senha foi atualizada','success');}}}}
         };
     }
 
     document.getElementById('close-modal-btn').addEventListener('click',function(){closeUsersModal();});
-    function changePw(u,p){var us=getUsers();if(us[u]){us[u].password=hashPw(p);saveUsers(us);}}
+    function changePw(u,p){
+        var us=getUsers();
+        if(us[u]){
+            us[u].password=hashPw(p);
+            var saved=saveUsers(us);
+            if(!saved){
+                showNotification('Erro ao alterar senha de '+u,'error');
+            }
+            return saved;
+        }
+        return false;
+    }
 
     /* ---- Notifications ---- */
     function showNotification(msg,type){
@@ -658,7 +714,11 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
         if(!users[tempUser.username]){errEl.style.display='block';errEl.textContent='Erro inesperado. Tente novamente.';return;}
         users[tempUser.username].password=hashPw(pw);
         delete users[tempUser.username].isFirstLogin;
-        saveUsers(users);
+        if(!saveUsers(users)){
+            errEl.style.display='block';
+            errEl.textContent='Erro ao salvar a senha. Verifique espaco de armazenamento.';
+            return;
+        }
 
         currentUser={username:tempUser.username,role:tempUser.role};
         document.getElementById('first-login-screen').style.display='none';
@@ -705,7 +765,11 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
         var users=getUsers();if(users[u]){showNotification('Usuario ja existe','error');return;}
         // New users get firstLogin marker
         users[u]={password:hashPw(p),role:r,createdAt:new Date().toISOString(),isFirstLogin:true};
-        saveUsers(users);renderUsersList();
+        if(!saveUsers(users)){
+            showNotification('Erro ao criar usuario. Tente novamente.','error');
+            return;
+        }
+        renderUsersList();
         document.getElementById('new-username').value='';document.getElementById('new-password').value='';
         showNotification('Usuario "'+u+'" criado como '+roleLabel(r),'success');
         showNotification('Senha padrao: Mudar@2026 — o usuario deve trocar no primeiro acesso.','success');
