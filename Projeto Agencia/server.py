@@ -14,13 +14,16 @@ Servidor Flask do dashboard da agencia.
 - DELETE /api/users/<username> → Remover usuário
 """
 from flask import Flask, request, jsonify, send_from_directory, session
-import os, json
+import os, json, datetime
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 
 # Adiciona a raiz do projeto ao path
 import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+# Persistência de arquivos (anexar sem sobrescrever)
+from persist.filelib import append_text, append_csv
 
 from app.gerar_dashboard import load_all_data, compute_kpis, parse_xlsx
 from app.models import db, User
@@ -82,16 +85,14 @@ with app.app_context():
 
 ALLOWED = {'.xlsx', '.xls', '.csv'}
 
-
 def allowed(name):
     return os.path.splitext(name)[1].lower() in ALLOWED
-
 
 def init_db():
     """Inicializa banco e cria admin padrão se não existir."""
     with app.app_context():
         db.create_all()
-        # Criar admin padrão se não houver nenhum usuário
+        # Criar admin padrão se não existir
         admin = User.query.filter_by(username='admin').first()
         if not admin:
             admin = User(
@@ -106,13 +107,11 @@ def init_db():
         else:
             print('[OK] Usuário admin já existe')
 
-
 def get_current_user():
     """Retorna o usuário da sessão atual."""
     if 'username' not in session:
         return None
     return User.query.filter_by(username=session['username']).first()
-
 
 def require_auth(roles=None):
     """Decorator para exigir autenticação e opcionalmente permissões."""
@@ -128,14 +127,13 @@ def require_auth(roles=None):
         return wrapper
     return decorator
 
-
 @app.route('/')
 def index():
-    """Serve o index.html estatico com login."""
+    """Serve o index.html estático com login."""
     return send_from_directory(ROOT_DIR, 'index.html')
 
 
-# ============ AUTH ENDPOINTS ============
+# ============ ENDPOINTS DE AUTENTICAÇÃO ============
 
 @app.route('/api/login', methods=['POST'])
 def login():
@@ -159,7 +157,7 @@ def login():
 
     # Login OK - criar sessão
     session['username'] = user.username
-    session.permanent = True  # Usa配置 de PERMANENT_SESSION_LIFETIME
+    session.permanent = True  # Usa configuração de PERMANENT_SESSION_LIFETIME
 
     return jsonify({
         'ok': True,
@@ -167,13 +165,11 @@ def login():
         'message': 'Login OK'
     })
 
-
 @app.route('/api/logout', methods=['POST'])
 def logout():
     """Logout do usuário."""
     session.clear()
     return jsonify({'ok': True, 'message': 'Logout OK'})
-
 
 @app.route('/api/me', methods=['GET'])
 def me():
@@ -184,7 +180,7 @@ def me():
     return jsonify({'user': user.to_dict()})
 
 
-# ============ USER MANAGEMENT ENDPOINTS ============
+# ============ ENDPOINTS DE GESTÃO DE USUÁRIOS ============
 
 @app.route('/api/users', methods=['GET'])
 @require_auth(roles=['admin'])
@@ -368,21 +364,25 @@ def upload():
         return jsonify({'error': 'Nome de arquivo vazio'}), 400
 
     if not allowed(file.filename):
-        return jsonify({'error': 'Formato nao suportado. Envie .xlsx ou .xls'}), 400
+        return jsonify({'error': 'Formato não suportado. Envie .xlsx ou .xls'}), 400
 
     fname = secure_filename(file.filename)
     path = os.path.join(app.config['UPLOAD_FOLDER'], fname)
 
-    # Overwrite if exists
+    # Sobrescrever se já existir
     file.save(path)
 
     # Salvar metadado de upload
     meta = load_upload_meta()
     label = os.path.splitext(fname)[0].upper()
-    meta[label] = {'uploadedBy': user.username, 'uploadedAt': datetime.utcnow().isoformat()}
+    meta[label] = {'uploadedBy': user.username, 'uploadedAt': datetime.datetime.utcnow().isoformat()}
     save_upload_meta(meta)
 
-    # Parse and return data
+    # Persistência adicional: gravar upload em CSV
+    log_csv_path = os.path.join(app.config['UPLOAD_FOLDER'], 'upload_log.csv')
+    append_csv(log_csv_path, [fname, user.username, datetime.datetime.utcnow().isoformat()], header=not os.path.exists(log_csv_path))
+
+    # Parse e retorna dados
     transactions, summary = parse_xlsx(path)
     kpis = compute_kpis(transactions, label)
 
@@ -426,7 +426,7 @@ def delete_file(filename):
             del meta[label]
             save_upload_meta(meta)
         return jsonify({'ok': True, 'message': 'Arquivo removido'})
-    return jsonify({'error': 'Arquivo nao encontrado'}), 404
+    return jsonify({'error': 'Arquivo não encontrado'}), 404
 
 
 @app.route('/api/data')
@@ -448,7 +448,7 @@ def api_data():
 
 @app.route('/api/annual')
 def api_annual():
-    """Dados agregados por mes para grafico anual."""
+    """Dados agregados por mês para gráfico anual."""
     base = app.config['UPLOAD_FOLDER']
     if not os.path.isdir(base):
         return jsonify({'months': [], 'sellers': {}})

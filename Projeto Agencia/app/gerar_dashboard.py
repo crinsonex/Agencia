@@ -1,8 +1,9 @@
 """
 Gera dashboard a partir dos arquivos xlsx da agencia.
-Modulo principal — le os dados e monta os KPIs.
-Dependencia: pip install pandas openpyxl
+Módulo principal — le os dados e monta os KPIs.
+Dependência: pip install pandas openpyxl
 """
+
 import pandas as pd
 import os, glob, json, re
 
@@ -29,7 +30,7 @@ def _money(val):
 
 def _parse_csv_text(path):
     """
-    CSV bagunçado — pode vir tudo em uma coluna:
+    CSV desorganizado — pode vir tudo em uma única coluna:
     - Linhas com '2447758 Giulia  RES329488PAGO  R$ 13.899,98 ...'
     - Linhas quebradas: '2430459 Giulia  RES051439-' seguida de 'PAGO  R$ 6.882,29 ...'
     - Status grudado no produto
@@ -41,7 +42,7 @@ def _parse_csv_text(path):
     transactions = []
     summary = []
     pending_line = None  # guarda linha anterior incompleta (e.g., RES051439-)
-    in_summary = False   # depois da linha 'Comissão' tudo é resumo
+    in_summary = False   # após a linha 'Comissão' tudo é resumo
 
     for raw_line in lines:
         line = raw_line.strip().strip('"').strip()
@@ -53,23 +54,24 @@ def _parse_csv_text(path):
             summary.append(line)
             continue
 
-        # Skip header row (starts with 'Id')
+        # Pular linha de cabeçalho (começa com 'Id')
         if line.lower().startswith('id'):
             continue
 
+        # Quando a linha indica resumo ou nomes de colaboradores ou rótulos de R$
         if in_summary or line.startswith('R$') or line.startswith('Giulia') or line.startswith('Amanda') or line.startswith('Juliana') or line.startswith('Sofia') or line.startswith('723,') or line.startswith('(erro)'):
             summary.append(line)
             continue
 
-        # Tentar detectar se é continuação de linha quebrada (ex: PAGO, PENDENTE, ou R$)
+        # Detectar continuação de linha quebrada (ex: PAGO, PENDENTE ou R$)
         line_stripped = line
         if pending_line is not None:
-            # Merge pending + current
+            # Junta linha pendente + linha atual
             line = pending_line + ' ' + line
             pending_line = None
             in_summary = False
 
-        # Detect ID no início
+        # Identificar ID no início
         cols = line.split()
         if not cols:
             continue
@@ -106,7 +108,7 @@ def _parse_csv_text(path):
             pending_line = line
             continue
 
-        # Extrair todos os R$
+        # Extrair todos os valores monetários
         money_vals = re.findall(r'R\$\s*[\d.,]+', rest)
 
         # Nome do produto = texto antes do primeiro R$
@@ -131,13 +133,13 @@ def _parse_csv_text(path):
 
 def parse_xlsx(path):
     """
-    Colunas do xlsx:
+    Colunas do arquivo Excel:
       0=Id  1=Nome  2=Produto  3=Status  4=Total  5=Taxa  6=Total s/ taxas
       7=Comissao  8=Obs  9=Total(sum)  10=Total s/ taxas(sum)  11=A pagar
     """
     ext = os.path.splitext(path)[1].lower()
 
-    # ---- CSV: pode vir como coluna única com dados separados por múltiplos espaços ----
+    # CSV: pode vir como coluna única com dados separados por múltiplos espaços
     if ext == '.csv':
         return _parse_csv_text(path)
 

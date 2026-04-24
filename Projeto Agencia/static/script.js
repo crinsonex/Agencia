@@ -1,3 +1,7 @@
+/*
+   Dashboard Agencia – script principal (frontend)
+   Comentários traduzidos para o português
+*/
 (function () {
     'use strict';
 
@@ -6,7 +10,7 @@
     var currentMonth = null;
     var currentTab = 'mensal';
 
-    // ---- Utilities ----
+    // ---- Utilitários ----
     function fmt(v) {
         return 'R$ ' + Number(v).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
     }
@@ -17,13 +21,13 @@
         return v.toFixed(0);
     }
 
-    // ---- Sidebar ----
+    // ---- Barra lateral ----
     function buildSidebar() {
         var menu = document.getElementById('sidebar-menu');
         menu.innerHTML = '';
         var keys = Object.keys(DATA);
         if (!keys.length) {
-            document.getElementById('month-count').textContent = 'Nenhum mes';
+            document.getElementById('month-count').textContent = 'Nenhum mês';
             return;
         }
         keys.forEach(function(key, i) {
@@ -35,10 +39,10 @@
             li.onclick = function() { selectMonth(key); };
             menu.appendChild(li);
         });
-        document.getElementById('month-count').textContent = keys.length + ' mes' + (keys.length > 1 ? 'es' : '');
+        document.getElementById('month-count').textContent = keys.length + ' mês' + (keys.length > 1 ? 'es' : '');
     }
 
-    // ---- Month selection ----
+    // ---- Seleção de mês ----
     function selectMonth(key) {
         currentMonth = key;
         var d = DATA[key];
@@ -53,16 +57,16 @@
         var tot = k.pagos + k.pendentes;
         var conv = tot > 0 ? Math.round(k.pagos / tot * 100) + '% pago' : '\u2014';
         document.getElementById('month-subtitle').textContent =
-            'Faturamento, comissoes e resultado \u2014 ' + conv + ' (' + tot + ' vendas)';
+            'Faturamento, comissões e resultado \u2014 ' + conv + ' (' + tot + ' vendas)';
 
-        // KPI cards
+        // ---- Cartões KPI ----
         var grid = document.getElementById('kpi-grid');
         grid.innerHTML = '';
         [
             {l:'Faturamento Bruto', v:fmt(k.total)},
             {l:'Total Taxas', v:fmt(k.taxas)},
-            {l:'Liquido s/ Taxas', v:fmt(k.liquido)},
-            {l:'Total Comissoes', v:fmt(k.comissoes)},
+            {l:'Líquido s/ Taxas', v:fmt(k.liquido)},
+            {l:'Total Comissões', v:fmt(k.comissoes)},
             {l:'Vendas Pagas', v:k.pagos + ' de ' + tot},
             {l:'Vendas Pendentes', v:k.pendentes}
         ].forEach(function(item) {
@@ -72,7 +76,7 @@
             grid.appendChild(div);
         });
 
-        // Seller cards
+        // ---- Cartões de vendedor ----
         var sellers = document.getElementById('seller-panels');
         sellers.innerHTML = '';
         var sellerKeys = Object.keys(k.vendedores);
@@ -95,8 +99,8 @@
                     '</div>' +
                     '<div class="seller-values">' +
                         '<div class="sv-total">' + fmt(s.total) + '</div>' +
-                        '<div class="sv-liq">liquido: ' + fmt(s.liquido) + '</div>' +
-                        '<div class="sv-com">comissao: ' + fmt(s.comissao) + '</div>' +
+                        '<div class="sv-liq">líquido: ' + fmt(s.liquido) + '</div>' +
+                        '<div class="sv-com">comissão: ' + fmt(s.comissao) + '</div>' +
                     '</div>';
                 sgrid.appendChild(card);
             });
@@ -104,7 +108,7 @@
             sellers.appendChild(panel);
         }
 
-        // Bar chart - sellers
+        // ---- Gráfico de barras de vendedores ----
         if (barChart) barChart.destroy();
         barChart = new Chart(document.getElementById('chart-bar'), {
             type: 'bar',
@@ -126,7 +130,7 @@
             }
         });
 
-        // Donut - products
+        // ---- Gráfico de rosca - produtos
         var pLabels = Object.keys(k.produtos);
         if (donutChart) donutChart.destroy();
         donutChart = new Chart(document.getElementById('chart-donut'), {
@@ -147,7 +151,7 @@
             }
         });
 
-        // Tx table
+        // ---- Tabela de transações
         var tbody = document.getElementById('tx-body');
         tbody.innerHTML = '';
         d.transactions.forEach(function(t) {
@@ -168,7 +172,7 @@
             tbody.appendChild(tr);
         });
 
-        // Summary
+        // ---- Resumo ----
         var sumList = document.getElementById('summary-list');
         sumList.innerHTML = '';
         if (d.summary && d.summary.length) {
@@ -180,7 +184,7 @@
         }
     }
 
-    // ---- Annual View ----
+    // ---- Visão anual ----
     function loadAnnual() {
         fetch('/api/annual')
             .then(function(r){ return r.json(); })
@@ -192,15 +196,15 @@
     function renderAnnual(annual) {
         var months = annual.months;
         if (!months.length) {
-            document.getElementById('kpi-anual-grid').innerHTML = '<p style="padding:20px">Nenhum mes disponivel</p>';
+            document.getElementById('kpi-anual-grid').innerHTML = '<p style="padding:20px">Nenhum mês disponivel</p>';
             return;
         }
 
-        // Anual KPIs
-        var grandTotal = 0, grandTaxas = 0, grandLiquido = 0, grandComissoes = 0, grandPagos = 0, grandPendientes = 0;
+        // ---- KPIs anuais ----
+        var grandTotal = 0, grandTaxas = 0, grandLiquido = 0, grandComissoes = 0, grandPagos = 0, grandPendentes = 0;
         months.forEach(function(m) {
             grandTotal += m.total; grandTaxas += m.taxas; grandLiquido += m.liquido;
-            grandComissoes += m.comissoes; grandPagos += m.pagos; grandPendientes += m.pendentes;
+            grandComissoes += m.comissoes; grandPagos += m.pagos; grandPendentes += m.pendentes;
         });
 
         var grid = document.getElementById('kpi-anual-grid');
@@ -208,9 +212,9 @@
         [
             {l:'Faturamento Anual', v:fmt(grandTotal)},
             {l:'Taxas Anual', v:fmt(grandTaxas)},
-            {l:'Liquido Anual', v:fmt(grandLiquido)},
-            {l:'Comissoes Anual', v:fmt(grandComissoes)},
-            {l:'Total Vendas', v:grandPagos + ' pagas / ' + grandPendientes + ' pendentes'},
+            {l:'Líquido Anual', v:fmt(grandLiquido)},
+            {l:'Comissões Anual', v:fmt(grandComissoes)},
+            {l:'Total Vendas', v:grandPagos + ' pagas / ' + grandPendentes},
             {l:'Meses', v:months.length}
         ].forEach(function(item) {
             var div = document.createElement('div');
@@ -219,7 +223,7 @@
             grid.appendChild(div);
         });
 
-        // Line chart - evolution
+        // ---- Gráfico de linha - evolução ----
         if (lineChart) lineChart.destroy();
         lineChart = new Chart(document.getElementById('chart-line'), {
             type: 'line',
@@ -234,7 +238,7 @@
                         fill: true, tension: 0.3, pointRadius: 5, pointHoverRadius: 7,
                     },
                     {
-                        label: 'Liquido s/ Taxas',
+                        label: 'Líquido s/ Taxas',
                         data: months.map(function(m){ return m.liquido; }),
                         borderColor: '#10b981',
                         backgroundColor: 'rgba(16,185,129,0.08)',
@@ -267,7 +271,7 @@
             }
         });
 
-        // Sales per month bar chart
+        // ---- Gráfico de barras de vendas por mês ----
         if (salesBarChart) salesBarChart.destroy();
         salesBarChart = new Chart(document.getElementById('chart-sales-bar'), {
             type: 'bar',
@@ -295,7 +299,7 @@
             }
         });
 
-        // Sellers stacked per month
+        // ---- Vendedores empilhados por mês ----
         var sellerNames = Object.keys(annual.sellers);
         if (sellersStackedChart) sellersStackedChart.destroy();
         sellersStackedChart = new Chart(document.getElementById('chart-sellers-stacked'), {
@@ -325,7 +329,7 @@
             }
         });
 
-        // Annual summary table
+        // ---- Tabela de resumo anual ----
         var tbody = document.getElementById('anual-tbody');
         tbody.innerHTML = '';
         months.forEach(function(m) {
@@ -340,21 +344,9 @@
                 '<td class="num">' + m.pendentes + '</td>';
             tbody.appendChild(tr);
         });
-        // Total row
-        var tr = document.createElement('tr');
-        tr.style.fontWeight = '700';
-        tr.innerHTML =
-            '<td>TOTAL</td>' +
-            '<td class="num">' + fmt(grandTotal) + '</td>' +
-            '<td class="num">' + fmt(grandTaxas) + '</td>' +
-            '<td class="num">' + fmt(grandLiquido) + '</td>' +
-            '<td class="num">' + fmt(grandComissoes) + '</td>' +
-            '<td class="num">' + grandPagos + '</td>' +
-            '<td class="num">' + grandPendientes + '</td>';
-        tbody.appendChild(tr);
     }
 
-    // ---- Tab switching ----
+    // ---- Troca de aba ----
     window.switchTab = function(tab) {
         currentTab = tab;
         document.querySelectorAll('.tab').forEach(function(el) {
@@ -369,13 +361,13 @@
         if (tab === 'mensal') {
             title.textContent = DATA && currentMonth ? (DATA[currentMonth].meta.display || '-') : '-';
         } else {
-            title.textContent = 'Visao Anual';
-            subtitle.textContent = 'Evolucao dos resultados ao longo dos meses';
+            title.textContent = 'Visão Anual';
+            subtitle.textContent = 'Evolução dos resultados ao longo dos meses';
             loadAnnual();
         }
     };
 
-    // ---- Upload handling ----
+    // ---- Tratamento de upload ----
     function setupUpload() {
         var zone = document.getElementById('upload-zone');
         var input = document.getElementById('file-input');
@@ -416,7 +408,7 @@
             .then(function(resp) {
                 zone.classList.remove('uploading');
                 if (resp.ok) {
-                    // Merge new data into DATA
+                    // Mesclar novos dados em DATA
                     DATA[resp.month] = resp.data;
                     buildSidebar();
                     selectMonth(resp.month);
@@ -427,15 +419,11 @@
             })
             .catch(function() {
                 zone.classList.remove('uploading');
-                showNotification('Erro de conexao com o servidor', 'error');
+                showNotification('Erro de conexão com o servidor', 'error');
             });
     }
 
-    // ---- Delete handling ----
-    function setupDeleteButtons() {
-        // Buttons are added dynamically in sidebar
-    }
-
+    // ---- Manipulação de exclusão ----
     function deleteMonth(monthKey, filename) {
         if (!confirm('Remover ' + monthKey + '?')) return;
 
@@ -459,14 +447,14 @@
             });
     }
 
-    // Override buildSidebar to include delete buttons
+    // --- Substitui buildSidebar para incluir botões de exclusão ---
     var _buildSidebar = buildSidebar;
     buildSidebar = function() {
         var menu = document.getElementById('sidebar-menu');
         menu.innerHTML = '';
         var keys = Object.keys(DATA);
         if (!keys.length) {
-            document.getElementById('month-count').textContent = 'Nenhum mes';
+            document.getElementById('month-count').textContent = 'Nenhum mês';
             return;
         }
         keys.forEach(function(key, i) {
@@ -490,15 +478,14 @@
                 e.stopPropagation();
                 deleteMonth(key, DATA[key].meta.file);
             };
-
             li.appendChild(nameSpan);
             li.appendChild(delBtn);
             menu.appendChild(li);
         });
-        document.getElementById('month-count').textContent = keys.length + ' mes' + (keys.length > 1 ? 'es' : '');
+        document.getElementById('month-count').textContent = keys.length + ' mês' + (keys.length > 1 ? 'es' : '');
     };
 
-    // ---- Notifications ----
+    // ---- Notificações ----
     function showNotification(msg, type) {
         var existing = document.querySelector('.notification');
         if (existing) existing.remove();
@@ -511,7 +498,7 @@
         setTimeout(function() { div.remove(); }, 3500);
     }
 
-    // ---- Init ----
+    // ---- Inicialização ----
     function init() {
         if (typeof DATA !== 'undefined' && Object.keys(DATA).length) {
             buildSidebar();

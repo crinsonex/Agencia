@@ -4,3 +4,4 @@ openpyxl
 gunicorn
 flask-sqlalchemy
 werkzeug
+python-socketio
