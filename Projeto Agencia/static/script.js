@@ -10,6 +10,71 @@
     var currentMonth = null;
     var currentTab = 'mensal';
 
+    // ---- Funcionalidade de Login ----
+    function setupLogin() {
+        var loginForm = document.getElementById('login-form');
+        if (!loginForm) return;
+
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            var username = document.getElementById('login-user').value.trim();
+            var password = document.getElementById('login-pass').value;
+            var errorDiv = document.getElementById('login-error');
+            var okDiv = document.getElementById('login-ok');
+            var submitBtn = loginForm.querySelector('.login-btn');
+
+            // Limpar mensagens anteriores
+            errorDiv.style.display = 'none';
+            okDiv.style.display = 'none';
+
+            if (!username || !password) {
+                errorDiv.textContent = 'Por favor, preencha usuário e senha';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            // Desabilitar botão durante a requisição
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Entrando...';
+
+            fetch('/api/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username: username,
+                    password: password
+                })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(resp) {
+                if (resp.ok) {
+                    // Login bem sucedido
+                    okDiv.style.display = 'block';
+                    // Redirecionar para o dashboard após breve delay
+                    setTimeout(function() {
+                        window.location.href = '/'; // Recarrega para verificar sessão
+                    }, 800);
+                } else {
+                    // Login falhou
+                    errorDiv.textContent = resp.error || 'Erro ao fazer login';
+                    errorDiv.style.display = 'block';
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Entrar';
+                }
+            })
+            .catch(function(err) {
+                errorDiv.textContent = 'Erro de conexão com o servidor';
+                errorDiv.style.display = 'block';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Entrar';
+                console.error('Erro no login:', err);
+            });
+        });
+    }
+
     // ---- Utilitários ----
     function fmt(v) {
         return 'R$ ' + Number(v).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
