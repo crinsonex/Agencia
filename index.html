@@ -797,16 +797,22 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
         var err=validatePassword(pw, currentUser.username);
         if(err){errEl.style.display='block';errEl.textContent=err;return;}
 
-        var resp = await apiFirstLoginChangePassword(currentUser.username, pw, cpw);
-        if(resp.error){
-            errEl.style.display='block';errEl.textContent=resp.error;
-            return;
-        }
+        try {
+            var resp = await apiFirstLoginChangePassword(currentUser.username, pw, cpw);
+            if(resp.error){
+                errEl.style.display='block';errEl.textContent=resp.error;
+                return;
+            }
 
-        currentUser = resp.user;
-        document.getElementById('first-login-screen').style.display='none';
-        showDashboardUI();
-        showNotification('Conta configurada com sucesso!','success');
+            currentUser = resp.user;
+            document.getElementById('first-login-screen').style.display='none';
+            showDashboardUI();
+            showNotification('Conta configurada com sucesso!','success');
+        } catch (error) {
+            console.error('First login error:', error);
+            errEl.style.display='block';
+            errEl.textContent='Erro de conexão. Verifique se o servidor está online e tente novamente.';
+        }
     });
 
     /* ---- Login form ---- */
@@ -823,20 +829,26 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
             return;
         }
 
-        var resp = await apiLogin(username, password);
-        if(resp.error){
-            errEl.style.display='block';errEl.textContent=resp.error;
-            return;
-        }
+        try {
+            var resp = await apiLogin(username, password);
+            if(resp.error){
+                errEl.style.display='block';errEl.textContent=resp.error;
+                return;
+            }
 
-        currentUser = resp.user;
-        okEl.style.display='block';
+            currentUser = resp.user;
+            okEl.style.display='block';
 
-        // First login check
-        if(resp.user.is_first_login || resp.user.isFirstLogin){
-            setTimeout(function(){showFirstLogin(username, resp.user.role);},300);
-        } else {
-            setTimeout(function(){showDashboardUI();},300);
+            // First login check
+            if(resp.user.is_first_login || resp.user.isFirstLogin){
+                setTimeout(function(){showFirstLogin(username, resp.user.role);},300);
+            } else {
+                setTimeout(function(){showDashboardUI();},300);
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            errEl.style.display='block';
+            errEl.textContent='Erro de conexão. Verifique se o servidor está online e tente novamente.';
         }
     });
 
