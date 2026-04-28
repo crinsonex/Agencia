@@ -35,7 +35,15 @@ app = Flask(__name__, static_folder=ROOT_DIR, template_folder='templates')
 app.config['UPLOAD_FOLDER'] = os.path.join(PROJECT_DIR, 'dados')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'ju-basilio-secret-2026')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(PROJECT_DIR, 'users.db')
+import os
+# Usa PostgreSQL no Render ou SQLite localmente
+database_url = os.environ.get('DATABASE_URL', '')
+if database_url and database_url.startswith('postgres'):
+    # Render fornece URL do Postgres
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url.replace('postgres://', 'postgresql://', 1)
+else:
+    # Local: SQLite
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(PROJECT_DIR, 'users.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['PERMANENT_SESSION_LIFETIME'] = 3600 * 24 * 7  # 1 semana
 
