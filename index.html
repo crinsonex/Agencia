@@ -273,12 +273,16 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
         var resp = await fetch(API_BASE + '/api/login', {
             method: 'POST',
             headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({username: username, password: password})
+            body: JSON.stringify({username: username, password: password}),
+            credentials: 'same-origin'
         });
         return await resp.json();
     }
     async function apiLogout(){
-        var resp = await fetch(API_BASE + '/api/logout', {method: 'POST'});
+        var resp = await fetch(API_BASE + '/api/logout', {
+            method: 'POST',
+            credentials: 'same-origin'
+        });
         return await resp.json();
     }
     async function apiGetMe(){
@@ -286,14 +290,17 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
         return await resp.json();
     }
     async function apiListUsers(){
-        var resp = await fetch(API_BASE + '/api/users', {credentials: 'same-origin'});
+        var resp = await fetch(API_BASE + '/api/users', {
+            credentials: 'same-origin'
+        });
         return await resp.json();
     }
     async function apiCreateUser(u,p,r){
         var resp = await fetch(API_BASE + '/api/users', {
             method: 'POST',
             headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({username: u, password: p, role: r})
+            body: JSON.stringify({username: u, password: p, role: r}),
+            credentials: 'same-origin'
         });
         return await resp.json();
     }
@@ -301,7 +308,8 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
         var resp = await fetch(API_BASE + '/api/users/' + encodeURIComponent(u) + '/role', {
             method: 'PUT',
             headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({role: newRole})
+            body: JSON.stringify({role: newRole}),
+            credentials: 'same-origin'
         });
         return await resp.json();
     }
@@ -309,13 +317,15 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
         var resp = await fetch(API_BASE + '/api/users/' + encodeURIComponent(u) + '/password', {
             method: 'PUT',
             headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({password: newPw})
+            body: JSON.stringify({password: newPw}),
+            credentials: 'same-origin'
         });
         return await resp.json();
     }
     async function apiDeleteUser(u){
         var resp = await fetch(API_BASE + '/api/users/' + encodeURIComponent(u), {
-            method: 'DELETE'
+            method: 'DELETE',
+            credentials: 'same-origin'
         });
         return await resp.json();
     }
@@ -323,7 +333,8 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
         var resp = await fetch(API_BASE + '/api/users/' + encodeURIComponent(u) + '/first-login', {
             method: 'POST',
             headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({password: pw, confirm_password: cpw})
+            body: JSON.stringify({password: pw, confirm_password: cpw}),
+            credentials: 'same-origin'
         });
         return await resp.json();
     }
